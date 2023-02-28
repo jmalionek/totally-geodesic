@@ -182,12 +182,12 @@ class NormalSurface:
 					current_disc_face_index = [face.index() for face in current_disc.faces]
 					next_index = current_disc_face_index.index(face_index)
 					current_disc = current_disc.adjacent_discs[next_index]
+					next_disc = current_disc.adjacent_discs[next_index]
 					current_arrow = current_arrow.next()
-					if n != edge.valence() - 1:
-						if gen != 0:
-							relator.append(gen)
-					else:
-						assert current_disc == normal_disc  # the last disc does not glue back to the first disc
+					if gen != 0:
+						relator.append(gen)
+					if n == edge.valence() - 1:
+						assert current_disc == normal_disc  # the last disc does not glue back to the first disc  # the last disc does not glue back to the first disc
 
 				# find paths from/to basepoint and append to relators
 				tree = self.fundamental_group_generators(return_tree=True)[1]
@@ -203,6 +203,81 @@ class NormalSurface:
 				relators.append(relator)
 		return relators
 
+	def surface_relations(self):
+		"""
+		Get the relations which would be in a presentation of the fundamental group of the surface (when used with the
+		generators from the fundamental_group_generators function
+		"""
+		generators, tree = self.fundamental_group_generators(return_tree=True)
+
+		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
+		T_regina = regina.Triangulation3(self.manifold)
+		relators = []
+
+		for normal_disc in self.polygons_list:
+			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
+				relator = []  # contains indices of faces that correspond to a single relation
+				# the edges on the tetrahedron that intersect our normal disc as embeddings
+				edge_embedding = self.intersecting_edges(normal_disc, True)[i]
+				# actual snappy edge
+				edge = T.Edges[edge_index]
+				arrow = edge.get_arrow()
+				while True:
+					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_embedding) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
+						break
+					else:
+						arrow = arrow.next()
+				current_disc = normal_disc
+				current_arrow = arrow
+
+				for n in range(edge.valence()):
+					# we look at which face we are gluing our normal disc across
+					# we take the index of this face with respect to the tetrahedron that it lies in
+					# corresponds to information stored in 'arrow'
+					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
+					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
+					face_index = face.index()
+					# find index of tetrahedron on which our normal disc lies in
+					tetrahedron_index = arrow.Tetrahedron.Index
+
+					# stuff needed to find the next disc
+					current_disc_face_index = [face.index() for face in current_disc.faces]
+					next_index = current_disc_face_index.index(face_index)
+					next_disc = current_disc.adjacent_discs[next_index]
+
+					# find generator
+					gen = self.surface_generator_of_edge(current_disc.get_id_numbers(), next_disc.get_id_numbers(), face_index)
+
+					if gen != 0:
+						relator.append(gen)
+					if n == edge.valence() - 1:
+						assert next_disc == normal_disc  # the last disc does not glue back to the first disc
+					current_arrow = current_arrow.next()
+					current_disc = next_disc
+				relators.append(relator)
+		return relators
+
+	def surface_generator_of_edge(self, initial, end, face):
+		if isinstance(initial, Polygon):
+			initial = initial.get_id_numbers()
+		if isinstance(end, Polygon):
+			end = end.get_id_numbers()
+		generators, tree = self.fundamental_group_generators(True)
+		for index, gen in enumerate(generators):
+			if initial == gen[0] and end == gen[1] and face == gen[2]:
+				return index + 1
+			elif initial == gen[1] and end == gen[0] and face == gen[2]:
+				return -(index + 1)
+		for gen in tree.edges(keys=True):
+			if initial == gen[0] and end == gen[1] and face == gen[2]:
+				return 0
+			elif initial == gen[1] and end == gen[0] and face == gen[2]:
+				return 0
+
+		print(initial, end, face)
+		print(generators)
+		print(tree)
+		raise RuntimeError("An edge was given which was not in the surface")
 
 class Polygon:
 	def __init__(self, manifold):
@@ -237,6 +312,18 @@ class Polygon:
 		if self.is_triangle():
 			d_type = 'tri'
 		return f'{d_type}:{self.tetrahedron}.{self.disc_type}.{self.disc_index}'
+
+	def __eq__(self, other):
+		if isinstance(other, Polygon):
+			if self.get_id_numbers() == other.get_id_numbers():
+				return True
+			else:
+				return False
+		else:
+			try:
+				return other.__eq__(self)
+			except TypeError as r:
+				raise TypeError(f"Comparison between Polygon and {type(other)} not allowed")
 
 
 class Triangle (Polygon):
@@ -474,13 +561,23 @@ def main():
 def main3():
 	M = snappy.Manifold('4_1')
 	G = M.fundamental_group(simplify_presentation=False)
-	print('meridian:', G.meridian())
-	print('longitude:', G.longitude())
+	Tr = regina.Triangulation3(M)
+
+	# print('meridian:', G.meridian())
+	# print('longitude:', G.longitude())
 	boundary_surface = from_regina_normal_surface(boundary_to_surface(regina.Triangulation3(M)), M)
+
 	gens = boundary_surface.fundamental_group_embedding()
 	relations = boundary_surface.relations()
-	# gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
-	# gens_string = [Tietze_to_string(gen) for gen in gens]
+	gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+	gens_string = [Tietze_to_string(gen) for gen in gens]
+	# print(len(boundary_surface.polygons_list))
+
+	# for gen in boundary_surface.fundamental_group_generators():
+	# 	print(boundary_surface.surface_generator_of_edge(*gen))
+
+	# print(boundary_surface.polygons_list)
+
 	for rel in relations:
 		print(Tietze_to_string(rel))
 		print(Tietze_to_matrix(rel, M))
@@ -490,6 +587,38 @@ def main3():
 	# 			break
 	# 		else:
 	# 			print(gens_matrix[i] * gens_matrix[j] * gens_matrix[i].inverse() * gens_matrix[j].inverse())
+
+def main4():
+	M = snappy.Manifold('4_1')
+	G = M.fundamental_group(simplify_presentation=False)
+	Tr = regina.Triangulation3(M)
+
+
+
+	# print('meridian:', G.meridian())
+	# print('longitude:', G.longitude())
+	boundary_surface = from_regina_normal_surface(boundary_to_surface(regina.Triangulation3(M)), M)
+	DSS = regina.DiscSetSurface(boundary_surface.surface)
+
+	gens, tree = boundary_surface.fundamental_group_generators(True)
+	print(gens)
+	for i, gen in enumerate(gens):
+		print(i+1)
+		print(gen)
+		print(Tr.faces(2)[gen[2]])
+		print()
+
+	print(tree.edges(keys=True))
+
+	print(Tr.faces(2))
+
+
+	for polygon in boundary_surface.polygons_list:
+		print(polygon)
+		print(regina.triDiscArcs[polygon.disc_type])
+		for perm in regina.triDiscArcs[polygon.disc_type]:
+			print(DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers()), perm), end=', ')
+		print('\n')
 
 
 if __name__ == '__main__':
