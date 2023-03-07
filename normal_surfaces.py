@@ -1,12 +1,13 @@
 import nscomplex
 import regina
 import snappy
+import pickle
 import networkx as nx
 import matplotlib.pyplot as plt
 from sage.all import block_matrix, matrix
 from complex_reps import preserves_hermitian_form
 from nscomplex import faces, regina_util, surfaces
-
+from itertools import combinations
 
 class NormalSurface:
 	def __init__(self, surface, manifold):
@@ -273,10 +274,6 @@ class NormalSurface:
 				return 0
 			elif initial == gen[1] and end == gen[0] and face == gen[2]:
 				return 0
-
-		print(initial, end, face)
-		print(generators)
-		print(tree)
 		raise RuntimeError("An edge was given which was not in the surface")
 
 class Polygon:
@@ -485,56 +482,6 @@ def find_surfaces(vertex_surfaces, g):
         all_surfaces = all_surfaces + AF.surfaces_genus_in_interior(g)
     return all_surfaces
 
-
-def main2():
-    import doubling
-    T = doubling.read_triangulation_info('example_manifold_2nd_last.txt')
-    Tr = T.regina_triangulation()
-    Tr.idealToFinite()
-    Tr.intelligentSimplify()
-    Tr = doubling.double_regina_triangulation(Tr)
-    Tr.finiteToIdeal()
-    Tr.intelligentSimplify()
-    M = snappy.Manifold(Tr.snapPea())
-    # M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
-    print('M:', M.fundamental_group(simplify_presentation=False))
-    print(M.num_tetrahedra())
-    # M.randomize()
-    # M.simplify()
-    surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED, algHints=regina.NS_VERTEX_DD)
-    print('num surfaces', len(surfaces))
-    surfaces_gen2 = find_surfaces(surfaces, 2)
-    print('num genus 2 surfaces', len(surfaces_gen2))
-    for surface in surfaces_gen2:
-        print(surface_group_in_PSL2R(surface, M))
-        our_surface = from_regina_normal_surface(surface, M)
-        gens = our_surface.fundamental_group_embedding()
-        # gens_matrix = [Tietze_to_matrix(gen, M).trace().imag().abs() for gen in gens]
-        # if max(gens_matrix) < 0.1:
-        #    print(surface)
-        #    for gen in gens:
-        # 	   print(Tietze_to_matrix(gen, M))
-        # print(surface_group_in_PSL2R(surface, M))
-    # # print(M.num_cusps())
-    # N = snappy.Manifold('4_1')
-    # print(N)
-    # N.dehn_fill((1,0), 0)
-    # print(N.fundamental_group())
-    # print(N)
-    # print(N.num_cusps())
-    # M.dehn_fill((92341, 700), 1)
-    # M.randomize()
-    # D = M.dirichlet_domain()
-    # M = snappy.Manifold(D)
-    # print(M.num_tetrahedra())
-    # print(M.num_cusps())
-    # print(M.identify())
-    # Tr.normalSurfaces()
-    # cs = nscomplex.ConnectedSurfaces(M, -2)
-    # for surface in S:
-    #	print(surface_group_in_PSL2R(surface, M))
-
-
 def main():
 	import matplotlib.pyplot as plt
 	import doubling
@@ -556,6 +503,67 @@ def main():
 	# plt.savefig('/home/joseph/Desktop/graph example.png')
 	# print(type(list(our_surface.fundamental_group_generators())[0]))
 	# print(surface_group_in_PSL2R(regina_surface, M))
+
+
+def main2():
+	# import doubling
+	# T = doubling.read_triangulation_info('example_manifold_2nd_last.txt')
+	# Tr = T.regina_triangulation()
+	# Tr.idealToFinite()
+	# Tr.intelligentSimplify()
+	# Tr = doubling.double_regina_triangulation(Tr)
+	# Tr.finiteToIdeal()
+	# Tr.intelligentSimplify()
+	# M = snappy.Manifold(Tr.snapPea())
+	M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
+	print('M:', M.fundamental_group(simplify_presentation=False))
+	print(M.num_tetrahedra())
+	# M.randomize()
+	# M.simplify()
+	surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED, algHints=regina.NS_VERTEX_DD)
+	print('num surfaces', len(surfaces))
+	surfaces_vec = []
+	for S in surfaces:
+		V = S.vector()
+		V_int = [int(n.stringValue()) for n in V]
+		surfaces_vec.append(V_int)
+	with open("surfaces_vertex.pickle", "wb") as file:
+		pickle.dump(surfaces_vec, file)
+	surfaces_gen2 = find_surfaces(surfaces, 2)
+	print('num genus 2 surfaces', len(surfaces_gen2))
+	surfaces_gen2_vec = []
+	for S in surfaces_gen2:
+		V = S.vector()
+		V_int = [int(n.stringValue()) for n in V]
+		surfaces_vec.append(V_int)
+	with open("surfaces_all.pickle", "wb") as file:
+		pickle.dump(surfaces_gen2_vec, file)
+
+		# print(surface_group_in_PSL2R(surface, M))
+		# gens_matrix = [Tietze_to_matrix(gen, M).trace().imag().abs() for gen in gens]
+		# if max(gens_matrix) < 0.1:
+		#    print(surface)
+		#    for gen in gens:
+		# 	   print(Tietze_to_matrix(gen, M))
+		# print(surface_group_in_PSL2R(surface, M))
+	# # print(M.num_cusps())
+	# N = snappy.Manifold('4_1')
+	# print(N)
+	# N.dehn_fill((1,0), 0)
+	# print(N.fundamental_group())
+	# print(N)
+	# print(N.num_cusps())
+	# M.dehn_fill((92341, 700), 1)
+	# M.randomize()
+	# D = M.dirichlet_domain()
+	# M = snappy.Manifold(D)
+	# print(M.num_tetrahedra())
+	# print(M.num_cusps())
+	# print(M.identify())
+	# Tr.normalSurfaces()
+	# cs = nscomplex.ConnectedSurfaces(M, -2)
+	# for surface in S:
+	#	print(surface_group_in_PSL2R(surface, M))
 
 
 def main3():
@@ -593,33 +601,68 @@ def main4():
 	G = M.fundamental_group(simplify_presentation=False)
 	Tr = regina.Triangulation3(M)
 
-
-
 	# print('meridian:', G.meridian())
 	# print('longitude:', G.longitude())
 	boundary_surface = from_regina_normal_surface(boundary_to_surface(regina.Triangulation3(M)), M)
 	DSS = regina.DiscSetSurface(boundary_surface.surface)
 
 	gens, tree = boundary_surface.fundamental_group_generators(True)
+	# print(gens)
+	# for i, gen in enumerate(gens):
+	# 	print(i+1)
+	# 	print(gen)
+	# 	print(Tr.faces(2)[gen[2]])
+	# 	print()
+	#
+	# print(tree.edges(keys=True))
+	# print(Tr.faces(2))
+	#
+	# for polygon in boundary_surface.polygons_list:
+	# 	print(polygon)
+	# 	print(regina.triDiscArcs[polygon.disc_type])
+	# 	for perm in regina.triDiscArcs[polygon.disc_type]:
+	# 		print(DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers()), perm), end=', ')
+	# 	print('\n')
 	print(gens)
-	for i, gen in enumerate(gens):
-		print(i+1)
-		print(gen)
-		print(Tr.faces(2)[gen[2]])
-		print()
-
-	print(tree.edges(keys=True))
-
-	print(Tr.faces(2))
+	print(boundary_surface.surface_relations())
 
 
-	for polygon in boundary_surface.polygons_list:
-		print(polygon)
-		print(regina.triDiscArcs[polygon.disc_type])
-		for perm in regina.triDiscArcs[polygon.disc_type]:
-			print(DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers()), perm), end=', ')
-		print('\n')
+def main5():
+	# M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
+	# MR = regina.Triangulation3(M)
+	# with open("surfaces_vertex.pickle", "rb") as file:
+	# 	surface_list = pickle.load(file)
+	# print(len(surface_list))
+	# regina_list = []
+	# for S in surface_list:
+	# 	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(S))
+	# 	regina_list.append(SR)
+	M = snappy.Manifold('K12a1')
+	MR = regina.Triangulation3(M)
+	print('num tet', MR.size())
+	regina_list = regina.NormalSurfaces(MR, regina.NS_QUAD_CLOSED, regina.NS_FUNDAMENTAL)
+	print(len(regina_list))
+	surfaces_real = []
+	surfaces_complex = []
+	for surface in regina_list:
+		all_real = True
+		our_surface = from_regina_normal_surface(surface, M)
+		gens = our_surface.fundamental_group_embedding()
+		gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+		comb = combinations(list(range(len(gens))), 3)
+		for c in list(comb):
+			gen = gens_matrix[c[0]] * gens_matrix[c[1]] * gens_matrix[c[2]]
+			if gen.trace().imag().abs() > 0.001:
+				surfaces_complex.append(surface)
+				all_real = False
+				print('complex', surface)
+				break
+		if all_real:
+			surfaces_real.append(surface)
+			break
+	print("real trace:", surfaces_real)
+	print("at least one complex trace:", surfaces_complex)
 
 
 if __name__ == '__main__':
-	main3()
+	main5()
