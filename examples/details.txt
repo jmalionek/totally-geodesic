@@ -1,0 +1,7 @@
+surface1: totally geodesic
+
+surface7, index > 9: have euler characteristic < -2
+(rest have eul char = -2)
+
+surface0 ~ 9: all connected, orientable, embedded according to regina / some are incompressible some are not
+(have not tested the remaining)
