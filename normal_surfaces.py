@@ -2,9 +2,11 @@ import nscomplex
 import regina
 import snappy
 import pickle
+import random
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
-from sage.all import block_matrix, matrix
+from sage.all import block_matrix, matrix, vector, CC, FreeGroup
 from complex_reps import preserves_hermitian_form
 from nscomplex import faces, regina_util, surfaces
 from itertools import combinations
@@ -275,6 +277,53 @@ class NormalSurface:
 			elif initial == gen[1] and end == gen[0] and face == gen[2]:
 				return 0
 		raise RuntimeError("An edge was given which was not in the surface")
+
+	def simplify_representation(self):
+		'''
+		TO-DO(?): write a method to simplify representation of surface given its generators and relations
+		(may have to use magma?)
+		'''
+		gen = self.fundamental_group_embedding()
+		relation = self.surface_relations()
+		F = FreeGroup(len(gen))
+		rel_in_G = [F(rel) for rel in relation]
+		G = F/rel_in_G
+		iso = G.simplification_isomorphism()
+
+		#goal: find simplified_group = []
+		pass
+
+	def plot_limit_set(self, name=None):
+		gens = self.fundamental_group_embedding()
+		gens_matrix = [Tietze_to_matrix(gen, self.manifold) for gen in gens]
+		gens_excludeI = []
+		I = matrix.identity(CC, 2)
+		for gen in gens_matrix:
+			if (gen - I).norm() > 0.01:
+				gens_excludeI.append(gen)
+		points_real = []
+		points_complex = []
+		for i in range(10000):
+			pt = vector(CC, [1, 0])
+			n = random.randint(1000, 2000)
+			for k in range(n):
+				mat = random.choice(gens_excludeI)
+				pt = mat * pt
+			points_real.append((pt[0] / pt[1]).real())
+			points_complex.append((pt[0] / pt[1]).imag())
+
+		fig, ax = plt.subplots()
+		ax.plot(points_real, points_complex, 'bo', markersize=0.5)
+		ax.set_xticks(np.linspace(min(points_real), max(points_real), 10))
+		ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 10))
+		if name is None:
+			fig.savefig('limit_set')
+		elif isinstance(name, str):
+			fig.savefig(name)
+		else:
+			raise TypeError('Name must be a string')
+
+
 
 class Polygon:
 	def __init__(self, manifold):
@@ -664,5 +713,25 @@ def main5():
 	print("at least one complex trace:", surfaces_complex)
 
 
+def main6():
+	M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
+	MR = regina.Triangulation3(M)
+	with open("surfaces_vertex.pickle", "rb") as file:
+		surface_list = pickle.load(file)
+	n = 28
+	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(surface_list[n]))
+	S = from_regina_normal_surface(SR, M)
+	name = 'limit set-surface' + str(n)
+	S.plot_limit_set(name)
+	print('surface', n, SR.eulerChar())
+
+		# print('surface', n)
+		# print('euler char:', SR.eulerChar())
+		# print('compressible:', not SR.isIncompressible())
+		# print('connected:', SR.isConnected())
+		# print('orientable:', SR.isOrientable())
+		# print('embedded:', SR.embedded())
+	    # index of sfces with euler char < -2: [15, 17, 21, 22, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265]
+
 if __name__ == '__main__':
-	main5()
+	main6()
