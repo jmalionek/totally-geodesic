@@ -22,6 +22,13 @@ class NormalSurface:
 		self.manifold = manifold
 		self.basepoint = None
 
+	def get_vector(self):
+		surfaces_vec = []
+		V = S.vector()
+		V_int = [int(n.stringValue()) for n in V]
+		surfaces_vec.append(V_int)
+		return surfaces_vec
+
 	def add_disc(self, disc):
 		self.polygons_list.append(disc)
 		self.polygons[disc.tetrahedron][disc.disc_type].append(disc)
@@ -393,6 +400,15 @@ class Quad (Polygon):
 	def is_quad(self):
 		return True
 
+def vec_to_NormalSurface(vector, M):
+	'''
+	vector is a list of integers, M is snappy manifold
+	returns our normal surface from the vector
+	'''
+	MR = regina.Triangulation3(M)
+	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(vector))
+	S = from_regina_normal_surface(SR, M)
+	return S
 
 def from_regina_normal_surface(surface, manifold):
 	"""
@@ -525,7 +541,6 @@ def find_surfaces(vertex_surfaces, g):
     NS = vertex_surfaces
     NS_nscomplex = [surfaces.NormalSurface(S, i) for i, S in enumerate(NS) if S.eulerChar() < 0]
     all_faces = faces.admissible_faces(NS_nscomplex)
-    print(len(all_faces))
     all_surfaces = []
     for AF in all_faces:
         all_surfaces = all_surfaces + AF.surfaces_genus_in_interior(g)
@@ -735,3 +750,4 @@ def main6():
 
 if __name__ == '__main__':
 	main6()
+

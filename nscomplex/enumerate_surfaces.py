@@ -12,7 +12,7 @@ from .regina_util import (to_int, is_normal, haken_sum,
 class SurfacesByEuler(object):
     """
     A bag for holding (almost) normal surfaces, sorted by Euler
-    characteristic.  The surfaces are not allowed to have components
+    characteristic. The surfaces are not allowed to have components
     that are vertex linking tori. At this stage, only almost normal
     surfaces with octogons are allowed, not those with tubes.
     """

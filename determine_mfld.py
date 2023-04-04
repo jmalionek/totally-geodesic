@@ -23,7 +23,7 @@ def remove_bad_mfld(mfld_list):
             except:
                 good_mfld.append(M_name)
             else:
-                if not M.link().is_alternating() and not M.is_two_bridge() :
+                if not M.link().is_alternating() and not M.is_two_bridge():
                     good_mfld.append(M_name)
     return good_mfld
 
@@ -39,12 +39,12 @@ def htlinkexterior():
 
     for knot in htlinkexterior12():
         M_isosig = snappy.Manifold(knot).isometry_signature()
-        if M_isosig not in montesino_isosig:
+        if M_isosig not in montesino_isosig and snappy.Manifold(knot).volume() > 11.9:
             chosen_mfld.append(knot)
 
     linkexterior = list(snappy.HTLinkExteriors(alternating=False, crossings=13)[11.9:])\
                    + list(snappy.HTLinkExteriors(alternating=False, crossings=14)[11.9:])\
-                   + list(snappy.HTLinkExteriors(alternating=False, crossings=13)[11.9:])
+                   + list(snappy.HTLinkExteriors(alternating=False, crossings=15)[11.9:])
 
     for link in linkexterior:
         try:
@@ -56,6 +56,8 @@ def htlinkexterior():
                 chosen_mfld.append(link.name())
 
     return chosen_mfld
+
+
 
 
 if __name__ == '__main__':
