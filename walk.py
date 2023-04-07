@@ -27,9 +27,8 @@ def obviously_compressible(surface):
     S = surfaces.NormalSurface(surface, 0)
     return S.has_obvious_compression()
 
-def detect_totally_geodesic(k=0):
-    # index = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    index = k
+def detect_totally_geodesic():
+    index = int(os.environ['SLURM_ARRAY_TASK_ID'])
     with open('htlinkexterior.txt', 'r') as data:
         i = 0
         while i < index:
@@ -38,8 +37,6 @@ def detect_totally_geodesic(k=0):
         name = data.readline()
     M = snappy.Manifold(name)
     genus_bd = math.floor(M.volume() / (4 * math.pi) + 1)
-
-    print(M.num_tetrahedra())
 
     # use vertex surfaces to enumerate surfaces
 
@@ -60,8 +57,6 @@ def detect_totally_geodesic(k=0):
 
     find_surface_time = tok - tik
 
-    print('time taken for vertex surfaces', find_surface_time)
-
     # use fundamental surfaces to enumerate surfaces
 
     tik = time.perf_counter()
@@ -81,53 +76,45 @@ def detect_totally_geodesic(k=0):
     tok = time.perf_counter()
     find_fundamental_surface_time = tok - tik
 
-    print('time taken for fundamental surfaces', find_fundamental_surface_time)
-
-    print('num surfaces from vertex surfaces', len(incomp_vec))
-    print('num surfaces from fundamental surfaces', len(incomp_vec_from_fundamental))
-    print('duplicates?', len(vec_set.union(set(incomp_vec))))
-
     # finding totally geodesic surfaces (for now using vertex surface enumerations)
-    #
-    # tik = time.perf_counter()
-    #
-    # tot_geo_surfaces = []
-    # for surface in incomp_our_surfaces:
-    #     all_real = True
-    #     gens = surface.fundamental_group_embedding()
-    #     gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
-    #     comb = list(combinations(list(range(len(gens))), 1)) \
-    #            + list(combinations(list(range(len(gens))), 2)) \
-    #            + list(combinations(list(range(len(gens))), 3))
-    #     for c in comb:
-    #         if not all_real:
-    #             break
-    #         gen = matrix.identity(CC, 2)
-    #         for n in c:
-    #             gen *= gens_matrix[n]
-    #         if gen.trace().imag().abs() > 0.001:
-    #             all_real = False
-    #             break
-    #     if all_real:
-    #         tot_geo_surfaces.append(surface.get_vector())
-    #
-    # tok = time.perf_counter()
-    #
-    # surface_fun_gp_time = tok - tik
-    #
-    # result = {'manifold': M.isometry_signature(),
-    #           'runtime_surfaces': find_surface_time,
-    #           'runtime_gp': surface_fun_gp_time,
-    #           'all_surfaces': incomp_vec,
-    #           'tot_geo': tot_geo_surfaces}
-    # print(result)
 
-    # directory = '/data/keeling/a/chaeryn2/totally_geodesic/'
-    # filename = 'totally_geodesic_info_manifold%i' % index
-    # with open(directory+filename, 'wb') as file:
-    #     pickle.dump(result, file)
+    tik = time.perf_counter()
+
+    tot_geo_surfaces = []
+    for surface in incomp_our_surfaces:
+        all_real = True
+        gens = surface.fundamental_group_embedding()
+        gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+        comb = list(combinations(list(range(len(gens))), 1)) \
+               + list(combinations(list(range(len(gens))), 2)) \
+               + list(combinations(list(range(len(gens))), 3))
+        for c in comb:
+            if not all_real:
+                break
+            gen = matrix.identity(CC, 2)
+            for n in c:
+                gen *= gens_matrix[n]
+            if gen.trace().imag().abs() > 0.001:
+                all_real = False
+                break
+        if all_real:
+            tot_geo_surfaces.append(surface.get_vector())
+
+    tok = time.perf_counter()
+
+    surface_fun_gp_time = tok - tik
+
+    result = {'manifold': M.isometry_signature(),
+              'runtime_surfaces': find_surface_time,
+              'runtime_gp': surface_fun_gp_time,
+              'all_surfaces': incomp_vec,
+              'tot_geo': tot_geo_surfaces}
+    print(result)
+
+    directory = '/data/keeling/a/chaeryn2/totally_geodesic/'
+    filename = 'totally_geodesic_info_manifold%i' % index
+    with open(directory+filename, 'wb') as file:
+        pickle.dump(result, file)
 
 if __name__ == '__main__':
-    for k in range(20, 30):
-        print('at', k)
-        detect_totally_geodesic(k)
+    detect_totally_geodesic()
