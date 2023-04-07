@@ -23,11 +23,10 @@ class NormalSurface:
 		self.basepoint = None
 
 	def get_vector(self):
-		surfaces_vec = []
-		V = S.vector()
+		V = self.surface.vector()
 		V_int = [int(n.stringValue()) for n in V]
-		surfaces_vec.append(V_int)
-		return surfaces_vec
+		surface_vec = tuple(V_int)
+		return surface_vec
 
 	def add_disc(self, disc):
 		self.polygons_list.append(disc)
@@ -400,13 +399,13 @@ class Quad (Polygon):
 	def is_quad(self):
 		return True
 
-def vec_to_NormalSurface(vector, M):
+def vec_to_NormalSurface(vector, M, coord=regina.NS_STANDARD):
 	'''
 	vector is a list of integers, M is snappy manifold
 	returns our normal surface from the vector
 	'''
 	MR = regina.Triangulation3(M)
-	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(vector))
+	SR = regina.NormalSurface(MR, coord, regina.VectorLarge(vector))
 	S = from_regina_normal_surface(SR, M)
 	return S
 
@@ -536,7 +535,7 @@ def boundary_to_surface(M):
 
 def find_surfaces(vertex_surfaces, g):
     '''
-    vertex_surfaces: list of regina normal surfaces
+    vertex_surfaces: list of regina normal surfaces that are vertex surfaces
     '''
     NS = vertex_surfaces
     NS_nscomplex = [surfaces.NormalSurface(S, i) for i, S in enumerate(NS) if S.eulerChar() < 0]
