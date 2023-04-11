@@ -17,7 +17,7 @@ def sort_results():
                                       'manifold':info['manifold'],
                                       'runtime_surfaces':info['runtime_surfaces'],
                                       'runtime_gp':info['runtime_gp'],
-                                      'num_tot_geo':len(info['num_tot_geo'])}])
+                                      'num_tot_geo':len(info['tot_geo'])}])
     manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result.csv', index=False)
 
 if __name__ == '__main__':
