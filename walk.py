@@ -117,6 +117,7 @@ def detect_totally_geodesic(i):
 
 if __name__ == '__main__':
     i = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    while i <= 100:
-       detect_totally_geodesic(i)
+    while i <= 30:
+       if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
+           detect_totally_geodesic(i)
        i += 10
