@@ -1,6 +1,6 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-9
+#SBATCH --array=0-270
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
@@ -117,6 +117,7 @@ def detect_totally_geodesic(i):
 
 if __name__ == '__main__':
     i = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    while i <= 100:
-       detect_totally_geodesic(i)
-       i += 10
+    while i <= 271636:
+       if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
+           detect_totally_geodesic(i)
+       i += 271
