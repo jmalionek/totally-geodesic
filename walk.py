@@ -27,8 +27,8 @@ def obviously_compressible(surface):
     S = surfaces.NormalSurface(surface, 0)
     return S.has_obvious_compression()
 
-def detect_totally_geodesic():
-    index = int(os.environ['SLURM_ARRAY_TASK_ID'])
+def detect_totally_geodesic(i):
+    index = i
     with open('htlinkexterior.txt', 'r') as data:
         i = 0
         while i < index:
@@ -57,26 +57,27 @@ def detect_totally_geodesic():
 
     find_surface_time = tok - tik
 
+    # (might need som time in the future?)
     # use fundamental surfaces to enumerate surfaces
+    #
+    # tik = time.perf_counter()
+    #
+    # all_surfaces_from_fundamental_dict = enumerate_surfaces.surfaces_to_euler_char(regina.Triangulation3(M), 2 - 2* genus_bd)
+    # all_surfaces_from_fundamental = all_surfaces_from_fundamental_dict.connected_normal(2 - 2 * genus_bd)
+    #
+    # incomp_surfaces_from_fundamental = [S.removeOcts() for S in all_surfaces_from_fundamental if not obviously_compressible(S)]  # list of regina normal surfaces
+    # incomp_our_surfaces_from_fundamental = [from_regina_normal_surface(S, M) for S in incomp_surfaces_from_fundamental]
+    # incomp_vec_from_fundamental = [S.get_vector() for S in incomp_our_surfaces_from_fundamental]
+    #
+    # vec_set = set(incomp_vec_from_fundamental)
+    # incomp_surf_no_duplicate = []
+    # for vec in vec_set:
+    #     incomp_surf_no_duplicate.append(vec_to_NormalSurface(vec, M))
+    #
+    # tok = time.perf_counter()
+    # find_fundamental_surface_time = tok - tik
 
-    tik = time.perf_counter()
-
-    all_surfaces_from_fundamental_dict = enumerate_surfaces.surfaces_to_euler_char(regina.Triangulation3(M), 2 - 2* genus_bd)
-    all_surfaces_from_fundamental = all_surfaces_from_fundamental_dict.connected_normal(2 - 2 * genus_bd)
-
-    incomp_surfaces_from_fundamental = [S.removeOcts() for S in all_surfaces_from_fundamental if not obviously_compressible(S)]  # list of regina normal surfaces
-    incomp_our_surfaces_from_fundamental = [from_regina_normal_surface(S, M) for S in incomp_surfaces_from_fundamental]
-    incomp_vec_from_fundamental = [S.get_vector() for S in incomp_our_surfaces_from_fundamental]
-
-    vec_set = set(incomp_vec_from_fundamental)
-    incomp_surf_no_duplicate = []
-    for vec in vec_set:
-        incomp_surf_no_duplicate.append(vec_to_NormalSurface(vec, M))
-
-    tok = time.perf_counter()
-    find_fundamental_surface_time = tok - tik
-
-    # finding totally geodesic surfaces (for now using vertex surface enumerations)
+    # finding totally geodesic surfaces (using vertex surface enumerations)
 
     tik = time.perf_counter()
 
@@ -109,7 +110,6 @@ def detect_totally_geodesic():
               'runtime_gp': surface_fun_gp_time,
               'all_surfaces': incomp_vec,
               'tot_geo': tot_geo_surfaces}
-    print(result)
 
     directory = '/data/keeling/a/chaeryn2/totally_geodesic/'
     filename = 'totally_geodesic_info_manifold%i' % index
@@ -117,4 +117,7 @@ def detect_totally_geodesic():
         pickle.dump(result, file)
 
 if __name__ == '__main__':
-    detect_totally_geodesic()
+    i = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    while i <= 100:
+       detect_totally_geodesic(i)
+       i += 10
