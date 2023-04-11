@@ -6,18 +6,17 @@
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SPATCH --output=/data/keeling/a/chaeryn2/totally_geodesic/htlinkexterior%A_%a
-#SPATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/htlinkexterior%A_%a
+#SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic/htlinkexterior%A_%a
+#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/htlinkexterior%A_%a
 
 import os
 import pickle
-
 import snappy, regina
 import math
 import time
 from normal_surfaces import *
 from itertools import combinations
-from nscomplex import regina_util, surfaces, enumerate_surfaces
+from nscomplex_tg import regina_util, surfaces, enumerate_surfaces
 from sage.all import block_matrix, matrix, vector, CC, FreeGroup
 
 def obviously_compressible(surface):

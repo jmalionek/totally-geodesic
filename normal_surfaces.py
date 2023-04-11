@@ -1,4 +1,4 @@
-import nscomplex
+import nscomplex_tg
 import regina
 import snappy
 import pickle
@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sage.all import block_matrix, matrix, vector, CC, FreeGroup
 from complex_reps import preserves_hermitian_form
-from nscomplex import faces, regina_util, surfaces
+from nscomplex_tg import faces, regina_util, surfaces
 from itertools import combinations
 
 class NormalSurface:
