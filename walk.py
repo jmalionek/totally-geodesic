@@ -9,9 +9,10 @@
 #SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic/htlinkexterior%A_%a
 #SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/htlinkexterior%A_%a
 
+import sys
+sys.path = ['/data/keeling/a/chaeryn2/totally-geodesic/nscomplex'] + sys.path
 import os
 import pickle
-
 import snappy, regina
 import math
 import time
