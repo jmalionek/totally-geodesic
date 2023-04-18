@@ -1,6 +1,6 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-270
+#SBATCH --array=0-9
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
@@ -26,15 +26,8 @@ def obviously_compressible(surface):
     S = surfaces.NormalSurface(surface, 0)
     return S.has_obvious_compression()
 
-def detect_totally_geodesic(i):
-    index = i
-    with open('htlinkexterior.txt', 'r') as data:
-        i = 0
-        while i < index:
-            data.readline()
-            i += 1
-        name = data.readline()
-    M = snappy.Manifold(name)
+def detect_totally_geodesic(manifold, index):
+    M = manifold
     genus_bd = math.floor(M.volume() / (4 * math.pi) + 1)
 
     # use vertex surfaces to enumerate surfaces
@@ -104,7 +97,7 @@ def detect_totally_geodesic(i):
 
     surface_fun_gp_time = tok - tik
 
-    result = {'manifold': M.isometry_signature(),
+    result = {'manifold': M.triangulation_isosig(),
               'runtime_surfaces': find_surface_time,
               'runtime_gp': surface_fun_gp_time,
               'all_surfaces': incomp_vec,
@@ -116,8 +109,18 @@ def detect_totally_geodesic(i):
         pickle.dump(result, file)
 
 if __name__ == '__main__':
-    i = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    while i <= 271636:
-       if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
-           detect_totally_geodesic(i)
-       i += 271
+    task = int(os.environ['SLURM_ARRAY_TASK_ID'])
+
+    mfld_list = []
+    with open('htlinkexterior.txt', 'r') as data:
+        i = 0
+        while i <= 30:
+            name = data.readline()
+            if i % 10 == task:
+                if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
+                    M = snappy.Manifold(name)
+                    mfld_list.append([i, M, M.num_tetrahedra()])
+            i += 1
+    mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
+    for manifold_info in mfld_list_num_tet:
+        detect_totally_geodesic(manifold_info[1], manifold_info[0])
