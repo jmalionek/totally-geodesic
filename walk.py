@@ -1,6 +1,6 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-9
+#SBATCH --array=0-270
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
@@ -14,6 +14,7 @@ import pickle
 import snappy, regina
 import math
 import time
+import gc
 from normal_surfaces import *
 from itertools import combinations
 from nscomplex_tg import regina_util, surfaces, enumerate_surfaces
@@ -32,22 +33,30 @@ def detect_totally_geodesic(manifold, index):
 
     # use vertex surfaces to enumerate surfaces
 
-    tik = time.perf_counter()
+    tik_total = time.perf_counter()
 
     vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED, algHints=regina.NS_VERTEX_DD)
     vertex_surfaces_ess = [S for S in vertex_surfaces if not obviously_compressible(S)]
+
+    tok = time.perf_counter()
+
+    find_vertex_sfces = tok - tik_total
+
+    tik = time.perf_counter()
 
     all_surfaces = []
     for g in range(2, genus_bd + 1):
         all_surfaces.extend(find_surfaces(vertex_surfaces_ess, g))
 
-    tok = time.perf_counter()
+    tok_total = time.perf_counter()
+
+    enumerate_from_vertex_sfces = tok_total - tik
 
     incomp_surfaces = [S for S in all_surfaces if not obviously_compressible(S)]
     incomp_our_surfaces = [from_regina_normal_surface(S, M) for S in incomp_surfaces]
     incomp_vec = [S.get_vector() for S in incomp_our_surfaces]
 
-    find_surface_time = tok - tik
+    find_surface_time = tok_total - tik_total
 
     # (might need som time in the future?)
     # use fundamental surfaces to enumerate surfaces
@@ -101,7 +110,9 @@ def detect_totally_geodesic(manifold, index):
               'runtime_surfaces': find_surface_time,
               'runtime_gp': surface_fun_gp_time,
               'all_surfaces': incomp_vec,
-              'tot_geo': tot_geo_surfaces}
+              'tot_geo': tot_geo_surfaces,
+              'runtime_vertex_surfaces': find_vertex_sfces,
+              'runtime_enumerating_surfaces_from_vertex_surfaces': enumerate_from_vertex_sfces}
 
     directory = '/data/keeling/a/chaeryn2/totally_geodesic/'
     filename = 'totally_geodesic_info_manifold%i' % index
@@ -114,13 +125,14 @@ if __name__ == '__main__':
     mfld_list = []
     with open('htlinkexterior.txt', 'r') as data:
         i = 0
-        while i <= 30:
+        while i <= 271636:
             name = data.readline()
-            if i % 10 == task:
+            if i % 271 == task:
                 if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
                     M = snappy.Manifold(name)
                     mfld_list.append([i, M, M.num_tetrahedra()])
             i += 1
     mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
     for manifold_info in mfld_list_num_tet:
+        gc.collect()
         detect_totally_geodesic(manifold_info[1], manifold_info[0])
