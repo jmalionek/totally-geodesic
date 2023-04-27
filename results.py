@@ -6,18 +6,30 @@ import pandas as pd
 def sort_results():
     manifold_data = pd.DataFrame({'index':pd.Series(dtype='int'),
                                   'manifold':pd.Series(dtype='str'),
-                                  'runtime_surfaces':pd.Series(dtype='float'),
+                                  'runtime_surfaces_total':pd.Series(dtype='float'),
                                   'runtime_gp':pd.Series(dtype='float'),
-                                  'num_tot_geo':pd.Series(dtype='int')}, index=[0])
+                                  'num_tot_geo':pd.Series(dtype='int'),
+                                  'runtime_vertex_surfaces':pd.Series(dtype='float'),
+                                  'runtime_enumerating_surfaces_from_vertex_surfaces':pd.Series(dtype='float')}, index=[0])
     for i in range(271636):
         if 'totally_geodesic_info_manifold%i'%i in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
             with open('/data/keeling/a/chaeryn2/totally_geodesic/totally_geodesic_info_manifold%i'%i, 'rb') as f:
                 info = pickle.load(f)
-            manifold_data = pd.concat([manifold_data, pd.DataFrame({'index': i,
-                                      'manifold': info['manifold'],
-                                      'runtime_surfaces': info['runtime_surfaces'],
-                                      'runtime_gp': info['runtime_gp'],
-                                      'num_tot_geo': len(info['tot_geo'])}, index=[0])])
+            if 'runtime_vertex_surfaces' in info.keys():
+                manifold_data = pd.concat([manifold_data, pd.DataFrame({'index': i,
+                                          'manifold': info['manifold'],
+                                          'runtime_surfaces_total': info['runtime_surfaces'],
+                                          'runtime_gp': info['runtime_gp'],
+                                          'num_tot_geo': len(info['tot_geo']),
+                                          'runtime_vertex_surfaces': info['runtime_vertex_surfaces'],
+                                          'runtime_enumerating_surfaces_from_vertex_surfaces': info['runtime_enumerating_surfaces_from_vertex_surfaces']}, index=[0])])
+            else:
+                manifold_data = pd.concat([manifold_data, pd.DataFrame({'index': i,
+                                          'manifold': info['manifold'],
+                                          'runtime_surfaces_total': info['runtime_surfaces'],
+                                          'runtime_gp': info['runtime_gp'],
+                                          'num_tot_geo': len(info['tot_geo'])}, index=[0])])
+
     manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result.csv', index=False)
 
 if __name__ == '__main__':
