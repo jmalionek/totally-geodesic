@@ -127,7 +127,7 @@ if __name__ == '__main__':
     mfld_list = os.listdir('/data/keeling/a/chaeryn2/totally-geodesic/example_Petronio_manifolds')
     mfld_list.remove('ExampleManifoldList')
     for name in mfld_list[task::5]:
-        T = doubling.read_triangulation_info(name)
+        T = doubling.read_triangulation_info('/data/keeling/a/chaeryn2/totally-geodesic/example_Petronio_manifolds'+name)
         Tr = T.regina_triangulation()
         Tr.idealToFinite()
         Tr.intelligentSimplify()
