@@ -307,27 +307,30 @@ class NormalSurface:
 		for gen in gens_matrix:
 			if (gen - I).norm() > 0.01:
 				gens_excludeI.append(gen)
-		points_real = []
-		points_complex = []
-		for i in range(10000):
-			pt = vector(CC, [1, 0])
-			n = random.randint(1000, 2000)
-			for k in range(n):
-				mat = random.choice(gens_excludeI)
-				pt = mat * pt
-			points_real.append((pt[0] / pt[1]).real())
-			points_complex.append((pt[0] / pt[1]).imag())
-
-		fig, ax = plt.subplots()
-		ax.plot(points_real, points_complex, 'bo', markersize=0.5)
-		ax.set_xticks(np.linspace(min(points_real), max(points_real), 10))
-		ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 10))
-		if name is None:
-			fig.savefig('limit_set')
-		elif isinstance(name, str):
-			fig.savefig(name)
+		if len(gens_excludeI) == 0:
+			print('all generators = I')
 		else:
-			raise TypeError('Name must be a string')
+			points_real = []
+			points_complex = []
+			for i in range(10000):
+				pt = vector(CC, [1, 0])
+				n = random.randint(1000, 2000)
+				for k in range(n):
+					mat = random.choice(gens_excludeI)
+					pt = mat * pt
+				points_real.append((pt[0] / pt[1]).real())
+				points_complex.append((pt[0] / pt[1]).imag())
+
+			fig, ax = plt.subplots()
+			ax.plot(points_real, points_complex, 'bo', markersize=0.5)
+			ax.set_xticks(np.linspace(min(points_real), max(points_real), 10))
+			ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 10))
+			if name is None:
+				fig.savefig('limit_set')
+			elif isinstance(name, str):
+				fig.savefig(name)
+			else:
+				raise TypeError('Name must be a string')
 
 
 

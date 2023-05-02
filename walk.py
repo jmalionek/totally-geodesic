@@ -14,6 +14,7 @@ import pickle
 import snappy, regina
 import math
 import time
+import multiprocessing
 import gc
 from normal_surfaces import *
 from itertools import combinations
@@ -35,7 +36,7 @@ def detect_totally_geodesic(manifold, index):
 
     tik_total = time.perf_counter()
 
-    vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED, algHints=regina.NS_VERTEX_DD)
+    vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED)  # algHints=regina.NS_VERTEX_DD not needed
     vertex_surfaces_ess = [S for S in vertex_surfaces if not obviously_compressible(S)]
 
     tok = time.perf_counter()
@@ -135,4 +136,9 @@ if __name__ == '__main__':
     mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
     for manifold_info in mfld_list_num_tet:
         gc.collect()
-        detect_totally_geodesic(manifold_info[1], manifold_info[0])
+        p = multiprocessing.Process(target=detect_totally_geodesic, args=(manifold_info[1], manifold_info[0]))
+        p.start()
+        p.join(5000)
+        if p.is_alive():
+            p.terminate()
+            continue
