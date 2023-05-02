@@ -116,8 +116,8 @@ def detect_totally_geodesic(manifold, name):
               'runtime_vertex_surfaces': find_vertex_sfces,
               'runtime_enumerating_surfaces_from_vertex_surfaces': enumerate_from_vertex_sfces}
 
-    directory = '/data/keeling/a/chaeryn2/totally-geodesic/example_Petronion_manifolds/tot_geo/'
-    filename = name + 'tot_get_info'
+    directory = '/data/keeling/a/chaeryn2/totally-geodesic/example_Petronio_manifolds/tot_geo/'
+    filename = name + '_tot_get_info'
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
 
