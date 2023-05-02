@@ -22,7 +22,6 @@ def double_regina_triangulation(T):
 	T is a regina triangulation with exactly one non-torus boundary component.
 	"""
 	n = T.size()
-	# print('get here?')
 	T.insertTriangulation(T)
 	boundary_component = None
 	for component in T.boundaryComponents():
@@ -31,8 +30,6 @@ def double_regina_triangulation(T):
 			print(boundary_component)
 			break
 	print(T.boundaryComponents())
-	print('get here?')
-	# print('get here too?')
 	tet_indices = []
 	face_indices = []
 	for tri in boundary_component.triangles():
@@ -42,7 +39,6 @@ def double_regina_triangulation(T):
 		# print(tet, face)
 		# print(T.tetrahedron(tet) in T.tetrahedra())
 		# T.tetrahedron(tet).join(face, T.tetrahedron(tet + n), regina.Perm4(0, 1, 2, 3))
-		# print('get here too?')
 	for i in range(len(tet_indices)):
 		# print('get inside?')
 		# tet = tri.embedding(0).simplex().index()
