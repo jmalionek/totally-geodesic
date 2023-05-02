@@ -6,8 +6,8 @@
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic/htlinkexterior%A_%a
-#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/htlinkexterior%A_%a
+#SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic/double_examples%A_%a
+#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/double_examples%A_%a
 
 import os
 import pickle
