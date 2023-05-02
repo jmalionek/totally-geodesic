@@ -115,7 +115,7 @@ def detect_totally_geodesic(manifold, name):
               'runtime_vertex_surfaces': find_vertex_sfces,
               'runtime_enumerating_surfaces_from_vertex_surfaces': enumerate_from_vertex_sfces}
 
-    directory = '/data/keeling/a/chaeryn2/totally-geodesic/Example\ Manifolds\ Last\ Census (Petronio)/tot_geo/'
+    directory = '/data/keeling/a/chaeryn2/totally-geodesic/example_Petronion_manifolds/tot_geo/'
     filename = name + 'tot_get_info'
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
@@ -123,7 +123,7 @@ def detect_totally_geodesic(manifold, name):
 if __name__ == '__main__':
     task = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    mfld_list = os.listdir('/data/keeling/a/chaeryn2/totally-geodesic/Example\ Manifolds\ Last\ Census (Petronio)')
+    mfld_list = os.listdir('/data/keeling/a/chaeryn2/totally-geodesic/example_Petronio_manifolds')
     mfld_list.remove('ExampleManifoldList')
     for name in mfld_list[task::5]:
         T = doubling.read_triangulation_info(name)
