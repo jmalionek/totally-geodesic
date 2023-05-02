@@ -16,6 +16,7 @@ import math
 import time
 import multiprocessing
 import gc
+import doubling
 from normal_surfaces import *
 from itertools import combinations
 from nscomplex_tg import regina_util, surfaces, enumerate_surfaces
