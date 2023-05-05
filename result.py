@@ -12,7 +12,7 @@ def sort_results():
     #                               'runtime_vertex_surfaces':pd.Series(dtype='float'),
     #                               'runtime_enumerating_surfaces_from_vertex_surfaces':pd.Series(dtype='float')}, index=[0])
 
-    manifold_data = pd.read_csv('results.py', delimiter=',')
+    manifold_data = pd.read_csv('result.csv', delimiter=',')
     for i in range(271636):
         if i not in manifold_data['index']:
             if 'totally_geodesic_info_manifold%i'%i in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
