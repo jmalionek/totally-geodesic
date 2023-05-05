@@ -5,8 +5,8 @@
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/totally-geodesic/result_cluster
-#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/result_cluster
+#SBATCH --output=/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.py
+#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/result_cluster.py
 
 import snappy, regina
 import os
@@ -43,7 +43,7 @@ def sort_results():
                                               'runtime_gp': info['runtime_gp'],
                                               'num_tot_geo': len(info['tot_geo'])}, index=[0])])
 
-    manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.csv', index=False)
+    manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.py.csv', index=False)
 
 if __name__ == '__main__':
     sort_results()
