@@ -1,17 +1,18 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-199
+#SBATCH --array=0-19
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic_print/htlinkexterior%A_%a
-#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/htlinkexterior%A_%a
+#SBATCH --output=/data/keeling/a/chaeryn2/totally_geodesic_print/twister_S21bundle%A_%a
+#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/twister_S21bundle%A_%a
 
 import os
 import pickle
 import snappy, regina
+import snappy.twister as twister
 import math
 import time
 import multiprocessing
@@ -28,7 +29,7 @@ def obviously_compressible(surface):
     S = surfaces.NormalSurface(surface, 0)
     return S.has_obvious_compression()
 
-def detect_totally_geodesic(manifold, index):
+def detect_totally_geodesic(manifold, index, basename):
     M = manifold
     genus_bd = math.floor(M.volume() / (4 * math.pi) + 1)
 
@@ -116,27 +117,29 @@ def detect_totally_geodesic(manifold, index):
               'runtime_enumerating_surfaces_from_vertex_surfaces': enumerate_from_vertex_sfces}
 
     directory = '/data/keeling/a/chaeryn2/totally_geodesic/'
-    filename = 'totally_geodesic_info_manifold%i' % index
+    filename = basename + str(index)
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
 
 if __name__ == '__main__':
     task = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    S = twister.Surface('S_2_1')
 
     mfld_list = []
-    with open('htlinkexterior.txt', 'r') as data:
+    with open('twister_S21.txt', 'r') as data:
         i = 0
-        while i <= 271636:
-            name = data.readline()
-            if i % 200 == task:
-                if 'totally_geodesic_info_manifold%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
-                    M = snappy.Manifold(name)
+        while i <= 19990:
+            line = data.readline()
+            name = line.split()[0]
+            if i % 20 == task:
+                if 'totally_geodesic_info_S21bundle%i'%i not in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
+                    M = S.bundle(name)
                     mfld_list.append([i, M, M.num_tetrahedra()])
             i += 1
     mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
     for manifold_info in mfld_list_num_tet:
         gc.collect()
-        p = multiprocessing.Process(target=detect_totally_geodesic, args=(manifold_info[1], manifold_info[0]))
+        p = multiprocessing.Process(target=detect_totally_geodesic, args=(manifold_info[1], manifold_info[0], 'totally_geodesic_info_S21bundle'))
         p.start()
         p.join(5000)
         if p.is_alive():
