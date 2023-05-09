@@ -107,7 +107,7 @@ def detect_totally_geodesic(manifold, index):
 
     surface_fun_gp_time = tok - tik
 
-    result = {'manifold': M.triangulation_isosig(),
+    result = {'manifold': regina.Triangulation3(M).tightEncoding(),
               'runtime_surfaces': find_surface_time,
               'runtime_gp': surface_fun_gp_time,
               'all_surfaces': incomp_vec,
