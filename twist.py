@@ -128,7 +128,7 @@ if __name__ == '__main__':
     mfld_list = []
     with open('twister_S21.txt', 'r') as data:
         i = 0
-        while i <= 19990:
+        while i < 19990:
             line = data.readline()
             name = line.split()[0]
             if i % 20 == task:
