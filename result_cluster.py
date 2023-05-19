@@ -43,7 +43,7 @@ def sort_results():
                                               'runtime_gp': info['runtime_gp'],
                                               'num_tot_geo': len(info['tot_geo'])}, index=[0])])
 
-    manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.py.csv', index=False)
+    manifold_data.to_csv('/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.csv', index=False)
 
 if __name__ == '__main__':
     sort_results()
