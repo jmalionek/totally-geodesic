@@ -5,8 +5,8 @@
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/totally-geodesic/result_cluster.py
-#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/result_cluster.py
+#SBATCH --output=/data/keeling/a/chaeryn2/totally-geodesic/result_cluster
+#SBATCH --error=/data/keeling/a/chaeryn2/totally_geodesic_error/result_cluster
 
 import snappy, regina
 import os
