@@ -29,6 +29,7 @@ def sort_results():
     #        if file in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
         with open('/data/keeling/a/chaeryn2/totally_geodesic/' + file, 'rb') as f:
             info = pickle.load(f)
+        i = file.removeprefix('totally_geodesic_info_S21bundle')
         if 'runtime_vertex_surfaces' in info.keys():
             manifold_data = pd.concat([manifold_data, pd.DataFrame({'index': i,
                                       'manifold': info['manifold'],
