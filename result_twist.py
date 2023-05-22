@@ -23,7 +23,7 @@ def sort_results():
                                   'runtime_enumerating_surfaces_from_vertex_surfaces':pd.Series(dtype='float')}, index=[0])
 
     # manifold_data = pd.read_csv('result_S21twist.csv', delimiter=',')
-    file_list = [name for name in os.listdir() if 'S21bundle' in name]
+    file_list = [name for name in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/') if 'S21bundle' in name]
     for file in file_list:
     #    if i not in manifold_data['index']:
     #        if file in os.listdir('/data/keeling/a/chaeryn2/totally_geodesic/'):
