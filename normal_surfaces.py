@@ -12,7 +12,13 @@ from nscomplex_tg import faces, regina_util, surfaces
 from itertools import combinations
 
 class NormalSurface:
+	"""
+	A class used to contain information and do computations for a normal surface
+	"""
 	def __init__(self, surface, manifold):
+		"""
+		Creates a normal surfaces from a regina normal surface and snappy manifold
+		"""
 		self.polygons_list = []
 		# A list of lists of lists, where the innermost list contains all of the discs which are
 		# of the specific tetrahedron and type. i.e. polygons[2][3] is a list of all the discs in
@@ -23,6 +29,9 @@ class NormalSurface:
 		self.basepoint = None
 
 	def get_vector(self):
+		"""
+		Returns the normal coordinate of the normal surface as a tuple
+		"""
 		V = self.surface.vector()
 		V_int = [int(n.stringValue()) for n in V]
 		surface_vec = tuple(V_int)
@@ -37,7 +46,9 @@ class NormalSurface:
 
 	def dual_graph(self):
 		"""
-		Given a NormalSurface object from this package, returns the dual graph
+		Given a NormalSurface object from this package, returns the dual graph as a networkx MultiDiGraph object
+		The vertices correspond to normal discs in the normal surface and are indexed by the id numbers (see Polygon.get_id_numbers for more information)
+		The edges correspond to edges of the normal surface triangulation and are indexed by the faces of the manifold triangulation on which they lie
 		"""
 		G = nx.MultiDiGraph()
 		for polygon in self.polygons_list:
@@ -49,20 +60,31 @@ class NormalSurface:
 		return G
 
 	def fundamental_group_generators(self, return_tree=False):
+		"""
+		Retrieves the edges that lie outside a maximal tree of the dual graph of the normal surface.
+		These edges correspond to a set of generators of the fundamental group of the normal surface.
+		This function optionally returns the maximal tree also if return_tree is True.
+		"""
 		undirected_dual_graph = self.dual_graph().to_undirected()
 		tree_graph = nx.minimum_spanning_tree(undirected_dual_graph)
-		# print(f'size of the spanning tree is {len(tree_graph.edges())}')
 		diff = nx.difference(undirected_dual_graph, tree_graph)
-		# print(f'the number of edges in the difference {len(diff.edges())}')
 		nx.draw(tree_graph)
 		if return_tree:
 			return list(diff.edges(keys=True)), tree_graph
 		return diff.edges
 
 	def fundamental_group_embedding(self):
-		self.manifold._choose_generators(False,False)
+		"""
+		Finds a set of generators of the fundamental group of the normal surface written in terms of the generators of the fundamental group
+		of the manifold it lies in. These generators are given as numbers that come from the unreduced presentation of the fundamental group
+		of the manifold computed by Snappy.
+		"""
+		self.manifold._choose_generators(False, False)
 		gen_info = self.manifold._choose_generators_info()
 		basepoint_tet = -1
+		# choose normal disc that will be used as the basepoint of the fundamental group of the normal surface
+		# try to choose normal disc inside basepoint tetrahedron of manifold, if there are no discs inside this tetrahedron
+		# just choose first normal disc in list of discs of normal surface
 		for entry in gen_info:
 			if entry['generator_path'] == -1:
 				basepoint_tet = entry['index']
@@ -76,7 +98,7 @@ class NormalSurface:
 		cycles = []
 		node_paths = []
 		generators, tree = self.fundamental_group_generators(True)
-		# add paths from/to basepoint to given edge (generator corresponds to a single edge outside of the tree)
+		# add paths from/to basepoint to given edge (generator corresponds to a single edge outside the tree) and creates a loop in the fundamental group
 		for edge in generators:
 			path_to_edge = nx.shortest_path(tree, basepoint_disc.get_id_numbers(), edge[0])
 			path_from_edge = nx.shortest_path(tree, edge[1], basepoint_disc.get_id_numbers())
@@ -94,6 +116,10 @@ class NormalSurface:
 		return gens_in_M
 
 	def find_manifold_generator(self, edge):
+		"""
+		Given an edge in the dual graph of the normal surface returns the corresponding generator in the fundamental group of the manifold.
+		This generator is oriented following the orientation on the edge.
+		"""
 		T = self.surface.triangulation()
 		self.manifold._choose_generators(True, True)
 		info = self.manifold._choose_generators_info()
@@ -114,7 +140,10 @@ class NormalSurface:
 		return gen
 
 	def find_manifold_generator_in_tree(self, node_path, edge_path):
-		# given a path in a graph retrieve the list of edge and list of nodes, this function compares these two lists to find the right generator
+		"""
+		Given a path written as a list of consecutive edges and consecutive vertices returns the
+		"""
+		# Given a path in a graph retrieves the list of edges and list of nodes, then compares these two lists to find the generator with the right orientation
 		generators, tree = self.fundamental_group_generators(True)
 		list_gens = []
 		for i, edge in enumerate(edge_path):
@@ -336,7 +365,7 @@ class NormalSurface:
 
 class Polygon:
 	def __init__(self, manifold):
-		# Stored in edge order based on regina's weird permuation system
+		# Stored in edge order based on regina's permuation system
 		self.adjacent_discs = []  # are our Polygon classes
 		# The indices of the tetrahedron that is adjacent to this one across the edge in edges
 		self.adjacent_tets = []
@@ -352,6 +381,11 @@ class Polygon:
 		self.disc_index = None
 
 	def get_id_numbers(self):
+		"""
+		Regina indexes normal discs as tuples of three numbers, the first entry is the index of the tetrahedron it lies in,
+		the second is the disc type, the third is the index of the disc among the same types. This function allows us to access this information
+		for normal_surfaces.NormalSurface instances.
+		"""
 		return self.tetrahedron, self.disc_type, self.disc_index
 
 	def is_triangle(self):
