@@ -194,6 +194,8 @@ class NormalSurface:
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
+		# We need this to determine the basepoint
+		self.fundamental_group_embedding()
 		relators = []
 
 		self.manifold._choose_generators(True, True)
@@ -236,7 +238,7 @@ class NormalSurface:
 					current_disc_face_index = [face.index() for face in current_disc.faces]
 					next_index = current_disc_face_index.index(face_index)
 					current_disc = current_disc.adjacent_discs[next_index]
-					next_disc = current_disc.adjacent_discs[next_index]
+					# next_disc = current_disc.adjacent_discs[next_index]
 					current_arrow = current_arrow.next()
 
 					if gen != 0:
@@ -264,9 +266,15 @@ class NormalSurface:
 		"""
 		Get the relations in a presentation of the fundamental group of the surface when used with the generators
 		from the fundamental_group_generators function.
+		TODO: Write a function which returns simplified stuff with sage
+		TODO: (Not published code) Write sanity check which checks invariants of surface groups make sense (abelian invariants)
+		TODO: (Not published code) Write function which finds relations and embedded surface relations and checks they are same
+		TODO: Run above on a bunch of things
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
+		# We need this to determine the basepoint
+		self.fundamental_group_embedding()
 		relators = []
 
 		for normal_disc in self.polygons_list:
