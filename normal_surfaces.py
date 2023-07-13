@@ -266,7 +266,6 @@ class NormalSurface:
 		"""
 		Get the relations in a presentation of the fundamental group of the surface when used with the generators
 		from the fundamental_group_generators function.
-		TODO: Write a function which returns simplified stuff with sage
 		TODO: (Not published code) Write sanity check which checks invariants of surface groups make sense (abelian invariants)
 		TODO: (Not published code) Write function which finds relations and embedded surface relations and checks they are same
 		TODO: Run above on a bunch of things
@@ -325,6 +324,70 @@ class NormalSurface:
 					current_disc = next_disc
 				relators.append(relator)
 		return relators
+
+	def sage_group(self, simplified = True):
+		"""
+		Returns a presentation of the fundamental group of this surface as a Sagemath finitely presented group object
+		By default, returns a simplified presentation of the fundamental group, if simplified is False, returns the presentation
+		coming from the generators and relations returned by fundamental_group_generators and surface_relations.
+		"""
+		generators = self.fundamental_group_generators()
+		relations = self.surface_relations()
+		F = FreeGroup(len(generators))
+		sage_relations = [F(relation) for relation in relations]
+		G = F/sage_relations
+		if simplified:
+			return G.simplification_isomorphism().codomain()
+		else:
+			return G
+
+	# Should not be included in final code
+	def surface_relations_as_holonomy_matrices(self):
+		relations = self.get_embedded_relations()
+		for embedded_rel in relations:
+			mat = Tietze_to_matrix(embedded_rel, self.manifold)
+			Id = matrix.identity(CC, 2)
+			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
+				print(embedded_rel)
+				print(mat)
+				raise RuntimeError('One of the relations was not plus or minus the identity')
+
+	# Should not be included in final code
+	def get_embedded_relations(self):
+		surface_relations = self.surface_relations()
+		embedding = self.fundamental_group_embedding()
+		embedded_relations = []
+		for i in range(len(surface_relations)):
+
+			surf_rel = surface_relations[i]
+			print('new relation')
+			print('surf_rel', surf_rel)
+			print('embedding', embedding)
+			embedded_rel = []
+			for elt in surf_rel:
+				if elt > 0:
+					embedded_rel += embedding[elt - 1]
+					print(elt, embedding[elt - 1])
+				else:
+					embedded_rel += [-num for num in embedding[-elt - 1][::-1]]
+					print(elt, [-num for num in embedding[-elt - 1][::-1]])
+			print('embedded_rel', embedded_rel)
+			embedded_relations.append(embedded_rel)
+		return embedded_relations
+
+	# Should not be included in final code
+	def relation_check(self):
+		"""
+		Writes the relations for the surface fundamental group in terms of the fundamental group of the manifold
+		"""
+		embedded_relations = self.get_embedded_relations()
+		relations = self.relations()
+		assert len(relations) == len(embedded_relations)
+		F = FreeGroup(len(self.fundamental_group_generators()))
+		sage_embedded_relations = [F(rel) for rel in embedded_relations]
+		sage_relations = [F(rel) for rel in relations]
+		return zip(sage_embedded_relations, sage_relations)
+
 
 	def surface_generator_of_edge(self, initial, end, face):
 		"""
