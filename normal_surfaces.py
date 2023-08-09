@@ -55,6 +55,7 @@ class NormalSurface:
 			G.add_node(polygon.get_id_numbers())
 		for polygon in self.polygons_list:
 			for index, adj_disc in enumerate(polygon.adjacent_discs):
+				# TODO: SKETCHY since the face indices are not the same for regina and snappy
 				if not G.has_edge(adj_disc.get_id_numbers(), polygon.get_id_numbers(), key=polygon.faces[index].index()):
 					G.add_edge(polygon.get_id_numbers(), adj_disc.get_id_numbers(), key=polygon.faces[index].index())
 		return G
@@ -165,7 +166,8 @@ class NormalSurface:
 		If return_vertex_pairs is set to True then it returns the edge on the tetrahedron as a list of pairs of vertices (0, 1, 2, 3) that are
 		its endpoints.
 		"""
-		T = self.surface.triangulation()
+		Tr = self.surface.triangulation()
+		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		tet_num = normal_disc.tetrahedron
 		disc_type = normal_disc.disc_type
 		edge_list = []
@@ -184,7 +186,10 @@ class NormalSurface:
 			return edge_list
 		edge_indices = []
 		for e in edge_list:
-			edge_indices.append(T.tetrahedron(tet_num).edge(*e).index())
+			# TODO: SOURCE OF SKETCHINESS. BELOW IS ONLY FOR REGINA. FIX TO RETURN SNAPPY STUFF?
+			# edge_indices.append(Tr.tetrahedron(tet_num).edge(*e).index()) # REGINA ONLY
+			# Below should work for snappy now
+			edge_indices.append(T.Tetrahedra[tet_num].Class[snappy.snap.t3mlite.bitmap(e)].Index)
 		return edge_indices
 
 	def relations(self):
@@ -192,6 +197,25 @@ class NormalSurface:
 		Computes the relations of the fundamental group of the surface written in terms of the generators of the manifold fundamental group.
 		Erring on the side of caution the result includes a lot of relations that are redundant.
 		"""
+		# TODO: APPARENTLY, snappy and regina do not always have the same information coming from the same manifold???
+		# Look at the output of this code on the surface [1,1,1,1,0,0,0]*3 for the knot 5_2.
+		# Known disparities: The index of the triangles and edges in snappy and regina do not line up (again, see 5_2)
+		# TODO: Because of this, we need to examine every place where we use a correspondence between regina and the snappy Mcomplex/Triangulation
+
+		# DONE: We wrote code which checks if the tetrahedra have the same internal ordering on the vertices and ran it on a ton of things
+		# def check_the_same(M):
+		# 	Mr = regina.Triangulation3(M)
+		# 	T = Mcomplex(M)
+		# 	for i in range(M.num_tetrahedra()):
+		# 		tet_snappy = T.Tetrahedra[i]
+		# 		tet_regina = Mr.tetrahedron(i)
+		# 		for face_index in range(4):
+		# 			snappy_perm = tet_snappy.Gluing[15 - 2 ** face_index]
+		# 			regina_perm = tet_regina.adjacentGluing(face_index)
+		# 			regina_perm = [regina_perm[i] for i in range(4)]
+		# 			print(snappy_perm, regina_perm)
+
+
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
 		# We need this to determine the basepoint
@@ -203,17 +227,33 @@ class NormalSurface:
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
+				print('NEW THING')
+				print(i)
+				print('intersecting_edges embedding', self.intersecting_edges(normal_disc))
+				print('normal_disc id_numbers', normal_disc.get_id_numbers())
+				print('intersecting_edges on tet', self.intersecting_edges(normal_disc, True))
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
 				relator = []
 				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
 				edge_pair = self.intersecting_edges(normal_disc, True)[i]
+				print(T.info())
+
+				print('edge_pair actually', edge_pair)
 				# actual snappy edge
+				print('edge_index', edge_index)
 				edge = T.Edges[edge_index]
+				print('edge', edge)
+				print('T.Edges', T.Edges)
 
 				# loops over the triangles glued to our edge until it finds the right arrow corresponding to our normal disc
 				# needed because snappy has an internal ordering on these arrows
 				arrow = edge.get_arrow()
-				while True:
+				print('edge_pair as binary', snappy.snap.t3mlite.simplex.bitmap(edge_pair))
+				print('tetrahedron', normal_disc.tetrahedron)
+				print('initial arrow', arrow)
+
+				for i in range(20):
+					print('arrow', arrow)
 					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_pair) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
 						break
 					else:
@@ -238,7 +278,7 @@ class NormalSurface:
 					current_disc_face_index = [face.index() for face in current_disc.faces]
 					next_index = current_disc_face_index.index(face_index)
 					current_disc = current_disc.adjacent_discs[next_index]
-					# next_disc = current_disc.adjacent_discs[next_index]
+					next_disc = current_disc.adjacent_discs[next_index]
 					current_arrow = current_arrow.next()
 
 					if gen != 0:
