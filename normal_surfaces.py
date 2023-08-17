@@ -162,7 +162,7 @@ class NormalSurface:
 
 	def intersecting_edges(self, normal_disc, return_vertex_pairs=False):
 		"""
-		Given a normal disc (Polygon object) returns the list of the indices of the edges inside the triangulation that the normal disc intersects.
+		Given a normal disc (Polygon object) returns the list of the indices of the edges inside the snappy triangulation that the normal disc intersects.
 		If return_vertex_pairs is set to True then it returns the edge on the tetrahedron as a list of pairs of vertices (0, 1, 2, 3) that are
 		its endpoints.
 		"""
@@ -227,33 +227,32 @@ class NormalSurface:
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
-				print('NEW THING')
-				print(i)
-				print('intersecting_edges embedding', self.intersecting_edges(normal_disc))
-				print('normal_disc id_numbers', normal_disc.get_id_numbers())
-				print('intersecting_edges on tet', self.intersecting_edges(normal_disc, True))
+				# print('NEW THING')
+				# print(i)
+				# print('intersecting_edges embedding', self.intersecting_edges(normal_disc))
+				# print('normal_disc id_numbers', normal_disc.get_id_numbers())
+				# print('intersecting_edges on tet', self.intersecting_edges(normal_disc, True))
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
 				relator = []
 				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
 				edge_pair = self.intersecting_edges(normal_disc, True)[i]
-				print(T.info())
 
-				print('edge_pair actually', edge_pair)
+				# print('edge_pair actually', edge_pair)
+				# print('edge_index', edge_index)
 				# actual snappy edge
-				print('edge_index', edge_index)
 				edge = T.Edges[edge_index]
-				print('edge', edge)
-				print('T.Edges', T.Edges)
+				# print('edge', edge)
+				# print('T.Edges', T.Edges)
 
 				# loops over the triangles glued to our edge until it finds the right arrow corresponding to our normal disc
 				# needed because snappy has an internal ordering on these arrows
 				arrow = edge.get_arrow()
-				print('edge_pair as binary', snappy.snap.t3mlite.simplex.bitmap(edge_pair))
-				print('tetrahedron', normal_disc.tetrahedron)
-				print('initial arrow', arrow)
+				# print('edge_pair as binary', snappy.snap.t3mlite.simplex.bitmap(edge_pair))
+				# print('tetrahedron', normal_disc.tetrahedron)
+				# print('initial arrow', arrow)
 
-				for i in range(20):
-					print('arrow', arrow)
+				# Change back to while True?
+				while True:
 					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_pair) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
 						break
 					else:
@@ -309,6 +308,7 @@ class NormalSurface:
 		TODO: (Not published code) Write sanity check which checks invariants of surface groups make sense (abelian invariants)
 		TODO: (Not published code) Write function which finds relations and embedded surface relations and checks they are same
 		TODO: Run above on a bunch of things
+		TODO: It seems like relations is working fine, but surface_relations is bad
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
@@ -389,6 +389,18 @@ class NormalSurface:
 			Id = matrix.identity(CC, 2)
 			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
 				print(embedded_rel)
+				print(mat)
+				raise RuntimeError('One of the relations was not plus or minus the identity')
+
+	# Should not be included in final code
+	def relations_as_holonomy_matrices(self):
+		relations = self.relations()
+		for relation in relations:
+			mat = Tietze_to_matrix(relation, self.manifold)
+			Id = matrix.identity(CC, 2)
+			print(mat)
+			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
+				print(relation)
 				print(mat)
 				raise RuntimeError('One of the relations was not plus or minus the identity')
 
@@ -514,6 +526,9 @@ class NormalSurface:
 
 class Polygon:
 	def __init__(self, manifold):
+		# Note that most of the indexing here follows the conventions from Regina, but this object stores a reference
+		# to a snappy manifold (which are not always completely compatible).
+
 		# Stored in edge order based on regina's permuation system
 		self.adjacent_discs = []  # are our Polygon classes
 		# The indices of the tetrahedron that is adjacent to this one across the edge in edges
@@ -522,7 +537,7 @@ class Polygon:
 		self.faces = []
 		# The index of the tetrahedron that this normal disk sits inside
 		self.tetrahedron = None
-		# The manifold that this normal disc lies in
+		# The (snappy) manifold that this normal disc lies in
 		self.manifold = manifold
 		# The disc type (a number from 0-6 inclusive, no octs or tubes!)
 		self.disc_type = None
