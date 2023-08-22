@@ -227,31 +227,19 @@ class NormalSurface:
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
-				# print('NEW THING')
-				# print(i)
-				# print('intersecting_edges embedding', self.intersecting_edges(normal_disc))
-				# print('normal_disc id_numbers', normal_disc.get_id_numbers())
-				# print('intersecting_edges on tet', self.intersecting_edges(normal_disc, True))
+
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
 				relator = []
 				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
 				edge_pair = self.intersecting_edges(normal_disc, True)[i]
 
-				# print('edge_pair actually', edge_pair)
-				# print('edge_index', edge_index)
 				# actual snappy edge
 				edge = T.Edges[edge_index]
-				# print('edge', edge)
-				# print('T.Edges', T.Edges)
 
 				# loops over the triangles glued to our edge until it finds the right arrow corresponding to our normal disc
 				# needed because snappy has an internal ordering on these arrows
 				arrow = edge.get_arrow()
-				# print('edge_pair as binary', snappy.snap.t3mlite.simplex.bitmap(edge_pair))
-				# print('tetrahedron', normal_disc.tetrahedron)
-				# print('initial arrow', arrow)
 
-				# Change back to while True?
 				while True:
 					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_pair) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
 						break
@@ -259,7 +247,7 @@ class NormalSurface:
 						arrow = arrow.next()
 				current_disc = normal_disc
 				current_arrow = arrow
-
+				print(edge.valence())
 				for n in range(edge.valence()):
 					# we look at which face we are gluing our normal disc across
 					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
@@ -270,6 +258,7 @@ class NormalSurface:
 					# find index of tetrahedron on which our normal disc lies in
 					tetrahedron_index = arrow.Tetrahedron.Index
 
+					print(current_disc, face_index)
 					# find generator
 					gen = info[tetrahedron_index]['generators'][face_index_in_tetrahedron]
 
@@ -277,8 +266,9 @@ class NormalSurface:
 					current_disc_face_index = [face.index() for face in current_disc.faces]
 					next_index = current_disc_face_index.index(face_index)
 					current_disc = current_disc.adjacent_discs[next_index]
-					next_disc = current_disc.adjacent_discs[next_index]
 					current_arrow = current_arrow.next()
+
+
 
 					if gen != 0:
 						relator.append(gen)
@@ -309,6 +299,8 @@ class NormalSurface:
 		TODO: (Not published code) Write function which finds relations and embedded surface relations and checks they are same
 		TODO: Run above on a bunch of things
 		TODO: It seems like relations is working fine, but surface_relations is bad
+		TODO: Thoroughly examine arrows on m006
+		TODO: Rewrite relations :( :( :(
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
@@ -318,6 +310,7 @@ class NormalSurface:
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
+
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
 				relator = []
 				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
@@ -335,22 +328,26 @@ class NormalSurface:
 						arrow = arrow.next()
 				current_disc = normal_disc
 				current_arrow = arrow
-
+				# print(edge.valence())
 				for n in range(edge.valence()):
 					# we look at which face we are gluing our normal disc across
 					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
 					# corresponds to information stored in 'arrow'
+					print(arrow)
 					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
 					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
 					face_index = face.index()
+					print('face_index', face_index)
 					# find index of tetrahedron on which our normal disc lies in
 					tetrahedron_index = arrow.Tetrahedron.Index
 
 					# stuff needed to find the next disc
 					current_disc_face_index = [face.index() for face in current_disc.faces]
+					print(current_disc_face_index)
 					next_index = current_disc_face_index.index(face_index)
 					next_disc = current_disc.adjacent_discs[next_index]
 
+					print(current_disc, next_disc, face_index)
 					# find generator
 					gen = self.surface_generator_of_edge(current_disc.get_id_numbers(), next_disc.get_id_numbers(), face_index)
 
@@ -360,6 +357,7 @@ class NormalSurface:
 					# in case the normal disc we are at is the last one check that it glues back to the first disc
 					if n == edge.valence() - 1:
 						assert next_disc == normal_disc
+
 					current_arrow = current_arrow.next()
 					current_disc = next_disc
 				relators.append(relator)
