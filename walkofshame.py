@@ -125,9 +125,12 @@ if __name__ == '__main__':
     task = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     mfld_list = []
+    with open(f'taking_too_long_manifolds_{task}.txt', 'r') as f:
+        too_long_list = f.read().split()
+        too_long_list = [int(num) for num in too_long_list]
 
     for i in range(task, 279649, 200):
-        if 'totally_geodesic_info_link%i'%i not in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/'):
+        if 'totally_geodesic_info_link%i'%i not in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/') and i not in too_long_list:
             M = snappy.HTLinkExteriors(alternating=False)[7.2:][i]
             mfld_list.append([i, M, M.num_tetrahedra()])
 
@@ -138,5 +141,7 @@ if __name__ == '__main__':
         p.start()
         p.join(5000)
         if p.is_alive():
+            with open(f'taking_too_long_manifolds_{task}.txt', 'a') as file:
+                file.write(str(manifold_info[0]) + "\n")
             p.terminate()
             continue
