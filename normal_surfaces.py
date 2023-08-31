@@ -301,6 +301,7 @@ class NormalSurface:
 		TODO: It seems like relations is working fine, but surface_relations is bad
 		TODO: Thoroughly examine arrows on m006
 		TODO: Rewrite relations :( :( :(
+		TODO: There can be two discs which are glued to eachother across the same face MULTIPLE times (see m006 boundary torus)
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
@@ -310,6 +311,13 @@ class NormalSurface:
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
+
+				print('normal_disc', normal_disc)
+
+				print('starting edge', edge_index)
+				corner = T.Edges[edge_index].Corners[0]
+				print('corner', corner)
+
 
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
 				relator = []
@@ -328,11 +336,17 @@ class NormalSurface:
 						arrow = arrow.next()
 				current_disc = normal_disc
 				current_arrow = arrow
+				print('starting arrow', current_arrow)
 				# print(edge.valence())
 				for n in range(edge.valence()):
 					# we look at which face we are gluing our normal disc across
 					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
 					# corresponds to information stored in 'arrow'
+					print()
+					print()
+					print('current_disc', current_disc)
+					print('current_disc neighbors', current_disc.adjacent_discs)
+					print('current_disc adjacent faces', current_disc.faces)
 					print(arrow)
 					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
 					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
@@ -347,7 +361,6 @@ class NormalSurface:
 					next_index = current_disc_face_index.index(face_index)
 					next_disc = current_disc.adjacent_discs[next_index]
 
-					print(current_disc, next_disc, face_index)
 					# find generator
 					gen = self.surface_generator_of_edge(current_disc.get_id_numbers(), next_disc.get_id_numbers(), face_index)
 
