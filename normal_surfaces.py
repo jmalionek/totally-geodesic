@@ -300,8 +300,9 @@ class NormalSurface:
 		TODO: Run above on a bunch of things
 		TODO: It seems like relations is working fine, but surface_relations is bad
 		TODO: Thoroughly examine arrows on m006
-		TODO: Rewrite relations :( :( :(
-		TODO: There can be two discs which are glued to eachother across the same face MULTIPLE times (see m006 boundary torus)
+		TODO: Rewrite relations :( :( :( BUT ACTUALLY THIS ONE 8/31/2023
+		TODO: There can be two discs which are glued to eachother across the same face MULTIPLE times (see m006 boundary torus) 8/29/2023
+		TODO: Use m004 as an example to debug 8/31/2023
 		"""
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		T_regina = regina.Triangulation3(self.manifold)
@@ -972,7 +973,7 @@ def main7():
 				break
 
 	with open('bad_manifolds.pickle', 'wb') as file:
-		pickle.dump(file, bad_manifolds)
+		pickle.dump(bad_manifolds, file)
 
 
 if __name__ == '__main__':
