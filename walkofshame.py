@@ -125,7 +125,7 @@ if __name__ == '__main__':
     task = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     mfld_list = []
-    with open(f'taking_too_long_manifolds_{task}.txt', 'r') as f:
+    with open(f'taking_too_long_manifolds/taking_too_long_manifolds_{task}.txt', 'r') as f:
         too_long_list = f.read().split()
         too_long_list = [int(num) for num in too_long_list]
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
         p.start()
         p.join(5000)
         if p.is_alive():
-            with open(f'taking_too_long_manifolds_{task}.txt', 'a') as file:
+            with open(f'taking_too_long_manifolds/taking_too_long_manifolds_{task}.txt', 'a') as file:
                 file.write(str(manifold_info[0]) + "\n")
             p.terminate()
             continue
