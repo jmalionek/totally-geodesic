@@ -295,11 +295,8 @@ class NormalSurface:
 		"""
 		Get the relations in a presentation of the fundamental group of the surface when used with the generators
 		from the fundamental_group_generators function.
-		TODO: (Not published code) Write sanity check which checks invariants of surface groups make sense (abelian invariants)
-		TODO: (Not published code) Write function which finds relations and embedded surface relations and checks they are same
-		TODO: Run above on a bunch of things
-		TODO: It seems like relations is working fine, but surface_relations is bad
-		TODO: Thoroughly examine arrows on m006
+		TODO: Run the relations checkers on a bunch of things
+		TODO: It seems like relations is working (mostly) fine, but surface_relations is bad
 		TODO: Rewrite relations :( :( :( BUT ACTUALLY THIS ONE 8/31/2023
 		TODO: There can be two discs which are glued to eachother across the same face MULTIPLE times (see m006 boundary torus) 8/29/2023
 		TODO: Use m004 as an example to debug 8/31/2023
@@ -376,6 +373,18 @@ class NormalSurface:
 					current_disc = next_disc
 				relators.append(relator)
 		return relators
+
+	def relations_version_2(self, surface_relations = True):
+
+		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
+		Tr = regina.Triangulation3(self.manifold)
+
+		edge_disc_dict = {}
+
+		for disc in self.polygons_list:
+			tet = disc.tetrahedron
+			disc_type = disc.disc_type
+
 
 	def sage_group(self, simplified = True):
 		"""
