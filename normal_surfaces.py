@@ -698,6 +698,39 @@ def Tietze_to_matrix(word, M):
 	return M.fundamental_group(simplify_presentation=False).SL2C(Tietze_to_string(word))
 
 
+def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
+	"""
+	Given a manifold M, this returns the holonomy matrices. The size parameter defines an upper bound for the degree of
+	the field extension that the entries of the holonomy matrices live in. If try_higher is true, this will increase the
+	size parameter (by doubling the current size repeatedly) until it finds the right field. If try_higher is false and
+	the field is not found, this returns None
+
+	TODO: Maybe add a check to make sure this is indeed a faithful representation of the manifold group?
+	(Checking it's a representation should be easy, checking that it's faithful will not be easy)
+	"""
+
+	# Gets the field information (the field as an extension of the rationals and what each matrix entry is in that field)
+	group_field_info = None
+	while group_field_info is None:
+		entries = K.holonomy_matrix_entries()
+		group_field_info = entries.find_field(10000, size)
+		if not try_higher and group_field_info is None:
+			return None
+		size = size * 2
+
+	F = group_field_info[0]
+	entries = group_field_info[2]
+	mat_space = MatrixSpace(F, 2)
+	assert len(entries) % 4 == 0
+	num_mats = len(entries) // 4
+	# assert len(entries) // 4 == len(M.fundamental_group().generators())
+	exact_matrices = []
+	for i in range(num_mats):
+		mat = mat_space(group_field_info[2][4 * i:4 * (i + 1)])
+		exact_matrices.append(mat)
+	return exact_matrices
+
+
 def surface_generators(surface, manifold, SL2C=True):
 	our_surface = from_regina_normal_surface(surface, manifold)
 	generators = our_surface.fundamental_group_embedding()
