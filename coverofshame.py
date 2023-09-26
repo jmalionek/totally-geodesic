@@ -31,7 +31,7 @@ def obviously_compressible(surface):
 
 def detect_totally_geodesic(manifold, index, basename):
     M = manifold
-    genus_bd_right = math.floor(M.volume()/ (8 * 0.29156 * math.pi) + 1)
+    genus_bd = math.floor(M.volume()/ (8 * 0.29156 * math.pi) + 1)
 
     # use vertex surfaces to enumerate surfaces
 
