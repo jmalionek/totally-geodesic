@@ -6,7 +6,7 @@ import random
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-from sage.all import block_matrix, matrix, vector, CC, FreeGroup
+from sage.all import block_matrix, matrix, vector, CC, FreeGroup, MatrixSpace
 from complex_reps import preserves_hermitian_form
 from nscomplex_tg import faces, regina_util, surfaces
 from itertools import combinations
@@ -712,7 +712,7 @@ def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 	# Gets the field information (the field as an extension of the rationals and what each matrix entry is in that field)
 	group_field_info = None
 	while group_field_info is None:
-		entries = K.holonomy_matrix_entries()
+		entries = M.holonomy_matrix_entries([False, True, True, True])
 		group_field_info = entries.find_field(10000, size)
 		if not try_higher and group_field_info is None:
 			return None
@@ -729,6 +729,51 @@ def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 		mat = mat_space(group_field_info[2][4 * i:4 * (i + 1)])
 		exact_matrices.append(mat)
 	return exact_matrices
+
+def get_exact_generators(M, S_vec):
+	S = vec_to_NormalSurface(S_vec, M)
+	gens = S.fundamental_group_embedding()
+	matrices = get_exact_holonomy_matrices(M)
+	print('matrix generators for the manifold group')
+	for mat in matrices:
+		print(mat)
+	print('field information')
+	field = matrices[0].base_ring()
+	print(field)
+	surface_matrices = []
+	for gen in gens:
+		mat = matrix.identity(field, 2)
+		for num in gen:
+			if num < 0:
+				mat = mat * matrices[-num - 1].inverse()
+			else:
+				mat = mat * matrices[num - 1]
+		surface_matrices.append(mat)
+	print('matrix generators for the surface')
+	for mat in surface_matrices:
+		print(mat)
+		print('trace')
+		print(mat.trace(), mat.trace())
+	return surface_matrices
+
+def get_surface_trace_field(M, S_vec):
+	mats = get_exact_generators(M, S_vec)
+	F = mats[0].base_ring()
+	N = len(mats)
+	non_invariant_gens = [mat.trace() for mat in mats]
+	for i in range(N):
+		for j in range(i, N):
+			mat = mats[i]*mats[j]
+			non_invariant_gens.append(mat.trace())
+	for i in range(N):
+		for j in range(i, N):
+			for k in range(j, N):
+				mat = mats[i]*mats[j]*mats[k]
+				non_invariant_gens.append(mat.trace())
+	trace_field = F.subfield_from_elements(non_invariant_gens)
+	return trace_field
+
+
 
 
 def surface_generators(surface, manifold, SL2C=True):
@@ -1017,7 +1062,18 @@ def main7():
 	with open('bad_manifolds.pickle', 'wb') as file:
 		pickle.dump(bad_manifolds, file)
 
+def main8():
+	"""
+	Print exact stuff for a given manifold and normal surface
+	"""
+	M = regina.Triangulation3.tightDecoding(""":("*"/"3")"+"."2"\'","1"5"&"-"0"4"6"86.,7"96/,8"760,9"661,,2-862-2,87282924(325(223(522(4266768696""")
+	M = snappy.Manifold(M)
+	S_vec = (0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0)
+	return get_surface_trace_field(M, S_vec)
+
+
+
 
 if __name__ == '__main__':
-	main7()
+	main8()
 
