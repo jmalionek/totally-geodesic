@@ -76,9 +76,10 @@ def volume_scatterplot(y_name, filename_word = None, image_name = None, **kwargs
 
 def weekly_check():
 	keywords = ['link', 'cover']
+
 	for keyword in keywords:
 		print(keyword)
-		results, manifolds = get_all_results('info_link', get_manifolds = True)
+		results, manifolds = get_all_results(keyword, get_manifolds = True)
 		print('number done:', len(results[0]))
 		print('"number with totally geodesic surfaces":', len([l for l in results['tot_geo'] if len(l) > 0]))
 		print('number which ACTUALLY have tot geo', len([i for i in range(len(manifolds)) if len(results['tot_geo'][i]) > 0 and manifolds[i].solution_type(enum=True) <= 2]))
