@@ -10,7 +10,7 @@ def get_all_results(filename_word = None, get_manifolds = False):
 	if filename_word is None:
 		files = os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs')
 	else:
-		files = [file for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs') if filename_word in name]
+		files = [file for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs') if filename_word in file]
 
 	all_results = {}
 	for file in files:
