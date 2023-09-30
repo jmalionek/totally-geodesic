@@ -70,7 +70,7 @@ def volume_scatterplot(y_name, filename_word = None, image_name = None, **kwargs
 
 	volumes = [M.volume() for M in manifolds]
 
-	ax.histogram(volumes, all_results[y_name], num_bins=num_bins, **kwargs)
+	ax.scatter(volumes, all_results[y_name], num_bins=num_bins, **kwargs)
 
 	fig.save(image_name)
 
@@ -82,6 +82,30 @@ def weekly_check():
 		results, manifolds = get_all_results(keyword, get_manifolds = True)
 		print('number done:', len(results['tot_geo']))
 		print('"number with totally geodesic surfaces":', len([l for l in results['tot_geo'] if len(l) > 0]))
-		print('number which ACTUALLY have tot geo', len([i for i in range(len(manifolds)) if len(results['tot_geo'][i]) > 0 and manifolds[i].solution_type(enum=True) <= 2]))
+		actual = [i for i in range(len(manifolds)) if len(results['tot_geo'][i]) > 0 and manifolds[i].solution_type(enum=True) <= 2]
+		print('Number of manifolds which ACTUALLY have tot geo', len(actual))
 		print()
 
+
+def number_unfinished():
+	num_done = len([name for name in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/') if 'link' in name])
+	num_total = len(snappy.HTLinkExteriors(alternating=False)[7.2:])
+	return num_total - num_done
+
+
+def main():
+
+	dir = '/data/keeling/a/chaeryn2/totally_geodesic/'
+	data, manifolds = get_all_results(get_manifolds=True)
+	times = data['runtime_surfaces'] + data['runtime_gp']
+
+	fig, ax = plt.subplots()
+	ax.histogram(times, num_bins = 30)
+	ax.set_xlabel('Algorithm runtime')
+	fig.save(dir + 'runtime_histogram.png')
+
+	fig, ax = plt.subplots()
+	ax.scatter([M.volume() for M in manifolds], times)
+	ax.set_xlabel('Manifold Volume')
+	ax.set_ylabel('Algorithm Runtime')
+	fig.save(dir + 'volume_runtime_scatter.png')
