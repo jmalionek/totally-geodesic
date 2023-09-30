@@ -24,6 +24,7 @@ def get_all_results(filename_word = None, get_manifolds = False):
 				all_results[key].append(results[key])
 
 	if get_manifolds:
+		manifolds = []
 		for code in all_results['manifold']:
 			Mr = regina.Triangulation3.tightDecoding(code)
 			manifolds.append(snappy.Manifold(Mr))
