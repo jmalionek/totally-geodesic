@@ -109,3 +109,6 @@ def main():
 	ax.set_xlabel('Manifold Volume')
 	ax.set_ylabel('Algorithm Runtime')
 	fig.save(dir + 'volume_runtime_scatter.png')
+
+if __name__ == '__main__':
+	main()
