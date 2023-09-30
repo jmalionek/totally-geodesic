@@ -7,14 +7,15 @@ import pickle
 
 
 def get_all_results(filename_word = None, get_manifolds = False):
+	dir = '/data/keeling/a/chaeryn2/tg_computation_outputs/'
 	if filename_word is None:
-		files = os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs')
+		files = os.listdir(dir)
 	else:
-		files = [file for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs') if filename_word in file]
+		files = [file for file in os.listdir(dir) if filename_word in file]
 
 	all_results = {}
 	for file in files:
-		with open(file, 'rb') as f:
+		with open(dir + file, 'rb') as f:
 			results = pickle.load(f)
 		for key in results.keys():
 			if key not in all_results.keys():
