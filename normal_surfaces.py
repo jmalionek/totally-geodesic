@@ -503,13 +503,14 @@ class NormalSurface:
 		#goal: find simplified_group = []
 		pass
 
-	def plot_limit_set(self, name=None):
+	def plot_limit_set(self, name=None, simplify_presentation=True):
 		"""
 		Plots the limit set of the normal surface and saves it with the given file name.
 		If a file name is not given the plot will be saved as limit_set.png.
 		"""
 		gens = self.fundamental_group_embedding()
 		gens_matrix = [Tietze_to_matrix(gen, self.manifold) for gen in gens]
+		gens_matrix = gens_matrix + [mat.inverse() for mat in gens_matrix]
 		gens_excludeI = []
 		I = matrix.identity(CC, 2)
 		for gen in gens_matrix:
