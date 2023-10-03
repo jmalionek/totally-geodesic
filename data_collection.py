@@ -110,5 +110,7 @@ def main():
 	ax.set_ylabel('Algorithm Runtime')
 	fig.save(dir + 'volume_runtime_scatter.png')
 
+	print(number_unfinished())
+
 if __name__ == '__main__':
 	main()
