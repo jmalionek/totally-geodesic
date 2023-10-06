@@ -379,11 +379,31 @@ class NormalSurface:
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		Tr = regina.Triangulation3(self.manifold)
 
-		edge_disc_dict = {}
+		num_edges = len(Tr.edges())
+
+		# Goes from an edge in the triangulation to pairs (disc, disc corner) (and by disc corner we mean the corner on
+		# the disc). The disc corner is recorded as the unique edge of the tetrahedron (given as a pair of endpoints)
+		# which, touches that specific corner.
+
+		# From these endpoints (and information about the normal disc), we can get the arcs on the normal disc which
+		# would be glued across as you go along getting the relation.
+		edge_disc_list = [[] for i in range(num_edges)]
 
 		for disc in self.polygons_list:
 			tet = disc.tetrahedron
 			disc_type = disc.disc_type
+			edge_pairs = self.intersecting_edges(disc, return_vertex_pairs=True)
+			edge_indices = [Tr.tetrahedron(tet).edge(*edge).index() for edge in edge_pairs]
+			for i, edge_index in enumerate(edge_indices):
+				edge_disc_list[edge_index].append((disc, set(edge_pairs[i])))
+
+		for edge in range(num_edges):
+			disc_list = edge_disc_list[edge]
+			while len(disc_list) > 0:
+				disc, corner = disc_list.pop(0)
+				# TODO: ACTUALLY WRITE THE RELATION GETTING CODE
+				# Start with a specific corner, delete the corner, then delete all corners you go through, then done.
+
 
 
 	def sage_group(self, simplified = True):
@@ -503,7 +523,7 @@ class NormalSurface:
 		#goal: find simplified_group = []
 		pass
 
-	def plot_limit_set(self, name=None, simplify_presentation=True):
+	def plot_limit_set(self, name=None, simplify_presentation=True, num_points = 10000):
 		"""
 		Plots the limit set of the normal surface and saves it with the given file name.
 		If a file name is not given the plot will be saved as limit_set.png.
@@ -524,7 +544,7 @@ class NormalSurface:
 		else:
 			points_real = []
 			points_complex = []
-			for i in range(10000):
+			for i in range(num_points):
 				pt = vector(CC, [1, 0])
 				n = random.randint(1000, 2000)
 				for k in range(n):
@@ -535,6 +555,7 @@ class NormalSurface:
 
 			fig, ax = plt.subplots()
 			ax.plot(points_real, points_complex, 'bo', markersize=0.5)
+			ax.set_aspect('equal', 'box')
 			ax.set_xticks(np.linspace(min(points_real), max(points_real), 10))
 			ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 10))
 			if name is None:
@@ -1033,7 +1054,7 @@ def main6():
 	MR = regina.Triangulation3(M)
 	with open("surfaces_vertex.pickle", "rb") as file:
 		surface_list = pickle.load(file)
-	n = 28
+	n = 9
 	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(surface_list[n]))
 	S = from_regina_normal_surface(SR, M)
 	name = 'limit set-surface' + str(n)
@@ -1076,5 +1097,5 @@ def main8():
 
 
 if __name__ == '__main__':
-	main8()
+	main6()
 
