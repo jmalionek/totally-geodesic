@@ -556,8 +556,8 @@ class NormalSurface:
 			fig, ax = plt.subplots()
 			ax.plot(points_real, points_complex, 'bo', markersize=0.5)
 			ax.set_aspect('equal', 'box')
-			ax.set_xticks(np.linspace(min(points_real), max(points_real), 10))
-			ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 10))
+			ax.set_xticks(np.linspace(min(points_real), max(points_real), 5))
+			ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 5))
 			if name is None:
 				fig.savefig('limit_set')
 			elif isinstance(name, str):
@@ -1058,7 +1058,7 @@ def main6():
 	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(surface_list[n]))
 	S = from_regina_normal_surface(SR, M)
 	name = 'limit set-surface' + str(n)
-	S.plot_limit_set(name)
+	S.plot_limit_set(name, num_points=100_000)
 	print('surface', n, SR.eulerChar())
 
 		# print('surface', n)
