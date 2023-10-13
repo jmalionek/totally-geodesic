@@ -135,8 +135,10 @@ if __name__ == '__main__':
             mfld_list.append([i, M, M.num_tetrahedra()])
 
     mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
+    print('entire manifold list', mfld_list_num_tet)
     for manifold_info in mfld_list_num_tet:
         gc.collect()
+        print('current manifold', manifold_info[0], manifold_info[1])
         p = multiprocessing.Process(target=detect_totally_geodesic, args=(manifold_info[1], manifold_info[0]))
         p.start()
         p.join(5000)
