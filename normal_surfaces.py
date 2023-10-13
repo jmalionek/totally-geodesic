@@ -378,6 +378,7 @@ class NormalSurface:
 
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		Tr = regina.Triangulation3(self.manifold)
+		DSS = regina.DiscSetSurface(self.surface)
 
 		num_edges = len(Tr.edges())
 
@@ -398,12 +399,34 @@ class NormalSurface:
 				edge_disc_list[edge_index].append((disc, set(edge_pairs[i])))
 
 		for edge in range(num_edges):
+			edge_valence = Tr.edges(edge).degree()
 			disc_list = edge_disc_list[edge]
 			while len(disc_list) > 0:
 				disc, corner = disc_list.pop(0)
-				# TODO: ACTUALLY WRITE THE RELATION GETTING CODE
-				# Start with a specific corner, delete the corner, then delete all corners you go through, then done.
+				# find the two arcs on normal disc that intersect the given edge, start_arc will be the one where we find the next disc
+				# at the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
+				start_arc = None
+				end_arc = None
+				if disc.is_triangle():
+					arc_list = regina.triDiscArcs[disc.disc_type]
+					for arc in arc_list:
+						if arc[1] == (corner - {disc.disc_type}).pop():
+							start_arc = arc
+						elif arc[2] == (corner - {disc.disc_type}).pop():
+							end_arc = arc
+				elif disc.is_quad():
+					arc_list = regina.quadDiscArcs[disc.disc_type - 4]
+					start_arc, end_arc = [arc for arc in arc_list if arc[0] in corner]
 
+				current_arc = start_arc
+				current_disc = disc
+				for i in range(edge_valence):
+					next_disc, next_arc = DSS.adjacentDisc(regina.DiscSpec(*current_disc.get_id_numbers()), current_arc)
+					next_our_disc = self.polygons[next_disc.tetIndex][next_disc.type][next_disc.number]  # our Polygon class instead of a regina one
+
+	# TO-DO: Rewrite arcs (permutations) so that they follow a specific orientation, probably so that they point outwards from the edge (in triangulation)
+	# they are adjacent to.
+	# This will make sure that the first two numbers of the permutation give the corner information (check notes for pictures)
 
 
 	def sage_group(self, simplified = True):
