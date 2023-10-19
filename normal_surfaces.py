@@ -375,12 +375,22 @@ class NormalSurface:
 		return relators
 
 	def relations_version_2(self, surface_relations = True):
+		all_relations = []  # list of all relations that will be returned
 
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		Tr = regina.Triangulation3(self.manifold)
 		DSS = regina.DiscSetSurface(self.surface)
 
+		self.manifold._choose_generators(True, True)
+		info = self.manifold._choose_generators_info()
+
+		generators, tree = self.fundamental_group_generators(return_tree=True)
+
 		num_edges = len(Tr.edges())
+
+		swap_last = regina.Perm4(0, 1, 3, 2)  # switches last two digits of a permutation when multiplied on the right
+		swap_both = regina.Perm4(1, 0, 3, 2)  # switches first two digits and last two digits of a permutation when multiplied on the right,
+											  # e.g. swaps (1, 3, 2, 0) to (3, 1, 0, 2)
 
 		# Goes from an edge in the triangulation to pairs (disc, disc corner) (and by disc corner we mean the corner on
 		# the disc). The disc corner is recorded as the unique edge of the tetrahedron (given as a pair of endpoints)
@@ -410,24 +420,50 @@ class NormalSurface:
 				if disc.is_triangle():
 					arc_list = regina.triDiscArcs[disc.disc_type]
 					for arc in arc_list:
-						if arc[1] == (corner - {disc.disc_type}).pop():
+						if {arc[0], arc[1]} == corner:
 							start_arc = arc
-						elif arc[2] == (corner - {disc.disc_type}).pop():
-							end_arc = arc
+							end_arc = start_arc * swap_last
+							break
 				elif disc.is_quad():
 					arc_list = regina.quadDiscArcs[disc.disc_type - 4]
-					start_arc, end_arc = [arc for arc in arc_list if arc[0] in corner]
+					for arc in arc_list:
+						if {arc[0], arc[1]} == corner:
+							start_arc = arc
+							end_arc = start_arc * swap_both
+							break
 
 				current_arc = start_arc
 				current_disc = disc
+				relation = []
 				for i in range(edge_valence):
 					next_disc, next_arc = DSS.adjacentDisc(regina.DiscSpec(*current_disc.get_id_numbers()), current_arc)
 					next_our_disc = self.polygons[next_disc.tetIndex][next_disc.type][next_disc.number]  # our Polygon class instead of a regina one
+					next_corner = {next_arc[0], next_arc[1]}
 
-	# TO-DO: Rewrite arcs (permutations) so that they follow a specific orientation, probably so that they point outwards from the edge (in triangulation)
-	# they are adjacent to.
-	# This will make sure that the first two numbers of the permutation give the corner information (check notes for pictures)
+					if surface_relations:
+						# get relations in terms of the fundamental group of the surface
+						regina_tet = Tr.tetrahedron(next_disc.tetIndex)
+						regina_face = tet.triangle(next_arc[3])
+						gen = self.surface_generator_of_edge(current_disc, next_our_disc, regina_face.index())
+						if gen != 0:
+							relation.append(gen)
+					else:
+						# get relations in terms of the fundamental group of the manifold
+						gen = info[current_disc.tetIndex]['generators'][current_arc[3]]
+						if gen != 0:
+							relation.append(gen)
 
+					disc_list.remove((next_our_disc, next_corner))
+
+					current_disc = next_our_disc
+					if current_disc.is_triangle():
+						current_arc = next_arc * swap_last
+					elif current_disc.is_quad():
+						current_arc = next_arc * swap_both
+				all_relations.append(relation)
+				assert current_disc == start_disc  # make sure we come back to the disc, arc that we started with
+				assert current_arc == start_arc
+		return all_relations
 
 	def sage_group(self, simplified = True):
 		"""
