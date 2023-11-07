@@ -306,15 +306,17 @@ class NormalSurface:
 		# We need this to determine the basepoint
 		self.fundamental_group_embedding()
 		relators = []
+		verbose = False
 
 		for normal_disc in self.polygons_list:
 			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
 
-				print('normal_disc', normal_disc)
+				if verbose:
+					print('normal_disc', normal_disc)
 
-				print('starting edge', edge_index)
-				corner = T.Edges[edge_index].Corners[0]
-				print('corner', corner)
+					print('starting edge', edge_index)
+					corner = T.Edges[edge_index].Corners[0]
+					print('corner', corner)
 
 
 				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
@@ -334,28 +336,32 @@ class NormalSurface:
 						arrow = arrow.next()
 				current_disc = normal_disc
 				current_arrow = arrow
-				print('starting arrow', current_arrow)
+				if verbose:
+					print('starting arrow', current_arrow)
 				# print(edge.valence())
 				for n in range(edge.valence()):
 					# we look at which face we are gluing our normal disc across
 					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
 					# corresponds to information stored in 'arrow'
-					print()
-					print()
-					print('current_disc', current_disc)
-					print('current_disc neighbors', current_disc.adjacent_discs)
-					print('current_disc adjacent faces', current_disc.faces)
-					print(arrow)
+					if verbose:
+						print()
+						print()
+						print('current_disc', current_disc)
+						print('current_disc neighbors', current_disc.adjacent_discs)
+						print('current_disc adjacent faces', current_disc.faces)
+						print(arrow)
 					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
 					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
 					face_index = face.index()
-					print('face_index', face_index)
+					if verbose:
+						print('face_index', face_index)
 					# find index of tetrahedron on which our normal disc lies in
 					tetrahedron_index = arrow.Tetrahedron.Index
 
 					# stuff needed to find the next disc
 					current_disc_face_index = [face.index() for face in current_disc.faces]
-					print(current_disc_face_index)
+					if verbose:
+						print(current_disc_face_index)
 					next_index = current_disc_face_index.index(face_index)
 					next_disc = current_disc.adjacent_discs[next_index]
 
@@ -409,10 +415,11 @@ class NormalSurface:
 				edge_disc_list[edge_index].append((disc, set(edge_pairs[i])))
 
 		for edge in range(num_edges):
-			edge_valence = Tr.edges(edge).degree()
+			edge_valence = Tr.edge(edge).degree()
 			disc_list = edge_disc_list[edge]
 			while len(disc_list) > 0:
-				disc, corner = disc_list.pop(0)
+				# disc, corner = disc_list.pop(0)
+				disc, corner = disc_list[0]
 				# find the two arcs on normal disc that intersect the given edge, start_arc will be the one where we find the next disc
 				# at the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
 				start_arc = None
@@ -443,13 +450,13 @@ class NormalSurface:
 					if surface_relations:
 						# get relations in terms of the fundamental group of the surface
 						regina_tet = Tr.tetrahedron(next_disc.tetIndex)
-						regina_face = tet.triangle(next_arc[3])
+						regina_face = regina_tet.triangle(next_arc[3])
 						gen = self.surface_generator_of_edge(current_disc, next_our_disc, regina_face.index())
 						if gen != 0:
 							relation.append(gen)
 					else:
 						# get relations in terms of the fundamental group of the manifold
-						gen = info[current_disc.tetIndex]['generators'][current_arc[3]]
+						gen = info[current_disc.tetrahedron]['generators'][current_arc[3]]
 						if gen != 0:
 							relation.append(gen)
 
@@ -461,8 +468,9 @@ class NormalSurface:
 					elif current_disc.is_quad():
 						current_arc = next_arc * swap_both
 				all_relations.append(relation)
-				assert current_disc == start_disc  # make sure we come back to the disc, arc that we started with
+				assert current_disc == disc  # make sure we come back to the disc, arc that we started with
 				assert current_arc == start_arc
+			# TODO: Deal with basepoints for manifold relations
 		return all_relations
 
 	def sage_group(self, simplified = True):
@@ -472,7 +480,7 @@ class NormalSurface:
 		coming from the generators and relations returned by fundamental_group_generators and surface_relations.
 		"""
 		generators = self.fundamental_group_generators()
-		relations = self.surface_relations()
+		relations = self.relations_version_2(True)
 		F = FreeGroup(len(generators))
 		sage_relations = [F(relation) for relation in relations]
 		G = F/sage_relations
@@ -506,7 +514,7 @@ class NormalSurface:
 
 	# Should not be included in final code
 	def get_embedded_relations(self):
-		surface_relations = self.surface_relations()
+		surface_relations = self.relations_version_2(True)
 		embedding = self.fundamental_group_embedding()
 		embedded_relations = []
 		for i in range(len(surface_relations)):
@@ -1152,9 +1160,49 @@ def main8():
 	S_vec = (0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0)
 	return get_surface_trace_field(M, S_vec)
 
+def test_new_relations():
+	# TODO: m412 breaks fundamental_group_embedding
+	M1 = snappy.Manifold('m004')
+	M2 = snappy.Manifold('m006')
+	M3 = snappy.Manifold('m413')
+	Ms = [M1, M2]
+	for M in Ms:
+		T = regina.Triangulation3(M)
+		print(M)
+		# print(T.detail())
+		vec = [1,1,1,1,0,0,0]*M.num_tetrahedra()
+		S = vec_to_NormalSurface(vec, M)
+
+		print('Surface relations')
+		print(S.relations_version_2(True))
+		for rel in S.surface_relations():
+			print(rel)
+		# print('Manifold relations')
+		# print(S.relations_version_2(False))
+		# for rel in S.relations():
+		# 	print(rel)
+		print(S.sage_group())
+		print(S.surface_relations_as_holonomy_matrices())
+
+def print_all_information():
+	M = snappy.Manifold('m004')
+	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
+	for disc in S.polygons_list:
+		print('disc', disc)
+		print('adjacent faces', disc.adjacent_discs)
+		print('regina face indices', disc.faces)
+	T = regina.Triangulation3(M)
+	print(T.detail())
+	gens, tree = S.fundamental_group_generators(return_tree=True)
+	print('gens')
+	for gen in gens:
+		print(gen)
+	print('tree')
+	for edge in tree.edges():
+		print(edge)
+
 
 
 
 if __name__ == '__main__':
-	main6()
-
+	print_all_information()
