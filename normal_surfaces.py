@@ -96,21 +96,36 @@ class NormalSurface:
 				basepoint_disc = disc
 				break
 		self.basepoint = basepoint_disc
+		verbose = True
+		if verbose:
+			print('basepoint')
+			print(self.basepoint)
 		cycles = []
 		node_paths = []
 		generators, tree = self.fundamental_group_generators(True)
 		# add paths from/to basepoint to given edge (generator corresponds to a single edge outside the tree) and creates a loop in the fundamental group
 		for edge in generators:
+			if verbose:
+				print(edge)
 			path_to_edge = nx.shortest_path(tree, basepoint_disc.get_id_numbers(), edge[0])
 			path_from_edge = nx.shortest_path(tree, edge[1], basepoint_disc.get_id_numbers())
 			edge_path = []
 			for i in range(len(path_to_edge) - 1):
 				edge_path.append((path_to_edge[i], path_to_edge[i+1], list(tree.get_edge_data(path_to_edge[i], path_to_edge[i+1]).keys())[0]))
+			if verbose:
+				print('edge_path_to_generator')
+				print(edge_path)
 			edge_path.append(edge)
 			for i in range(len(path_from_edge) - 1):
 				edge_path.append((path_from_edge[i], path_from_edge[i+1], list(tree.get_edge_data(path_from_edge[i], path_from_edge[i+1]).keys())[0]))
 			cycles.append(edge_path)
+			if verbose:
+				print('edge_path')
+				print(edge_path)
 			node_paths.append(path_to_edge + path_from_edge)
+			if verbose:
+				print('node_path')
+				print(path_to_edge + path_from_edge)
 		gens_in_M = []
 		for i, cycle in enumerate(cycles):
 			gens_in_M.append(self.find_manifold_generator_in_tree(node_paths[i], cycle))
@@ -1165,7 +1180,7 @@ def test_new_relations():
 	M1 = snappy.Manifold('m004')
 	M2 = snappy.Manifold('m006')
 	M3 = snappy.Manifold('m413')
-	Ms = [M1, M2]
+	Ms = [M1]
 	for M in Ms:
 		T = regina.Triangulation3(M)
 		print(M)
@@ -1200,6 +1215,8 @@ def print_all_information():
 	print('tree')
 	for edge in tree.edges():
 		print(edge)
+	print('embedding info')
+	print(S.fundamental_group_embedding())
 
 
 
