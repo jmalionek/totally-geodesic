@@ -6,7 +6,7 @@ import random
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-from sage.all import block_matrix, matrix, vector, CC, FreeGroup, MatrixSpace
+from sage.all import block_matrix, matrix, vector, CC, FreeGroup, MatrixSpace, PermutationGroup
 from complex_reps import preserves_hermitian_form
 from nscomplex_tg import faces, regina_util, surfaces
 from itertools import combinations
@@ -144,7 +144,10 @@ class NormalSurface:
 		ending_tet = self.get_polygon(*edge[1]).tetrahedron
 		starting_disc = self.get_polygon(*edge[0])
 		ending_disc = self.get_polygon(*edge[1])
-		index = starting_disc.adjacent_discs.index(ending_disc)
+		# index = starting_disc.adjacent_discs.index(ending_disc)
+		triangle_number = edge[2]
+		regina_triangle = T.triangle(triangle_number)
+
 
 		if starting_disc.is_triangle():
 			disc_type = starting_disc.disc_type
@@ -901,6 +904,36 @@ def surface_group_in_PSL2R(surface, manifold):
 	else:
 		return preserves_hermitian_form(gens)[0]
 
+def is_obviously_a_surface_group(G):
+	"""
+	Tests whether the given presentation is transparently
+	one of the fundamental group of an orientable surface.
+	"""
+	# Code provided by Nathan Dunfield
+
+	# First, we check there is only one relation
+	# and that every generator g appears exactly
+	# once as g and once as g^-1.
+	n, rels = G.ngens(), G.relations()
+	if len(rels) > 1:
+		return False
+	R = rels[0].Tietze()
+	if sorted(R) != list(range(-n, 0)) + list(range(1, n+1)):
+		return False
+
+	# Now we make sure that we take the boundary
+	# of the relator and identify sides accordingly
+	# the result is actually a surface.
+	perms = []
+	for g in range(1, n+1):
+		a0, b0 = R.index(g)+1, R.index(-g)+1
+		a1 = a0 + 1 if a0 < 2*n else 1
+		b1 = b0 + 1 if b0 < 2*n else 1
+		perms += [ [(a0, b1)], [(a1, b0)] ]
+
+	return len(PermutationGroup(perms).orbits()) == 1
+
+
 
 def run_on_knots():
 	# number of alternating knots starting at crossing number 4
@@ -1218,8 +1251,14 @@ def print_all_information():
 	print('embedding info')
 	print(S.fundamental_group_embedding())
 
+def surface_group_is_fine():
+	M = snappy.Manifold('m004')
+	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
+	G = S.sage_group()
+	Gsimp = G.simplification_isomorphism().codomain()
+	print(is_obviously_a_surface_group(Gsimp))
 
 
 
 if __name__ == '__main__':
-	print_all_information()
+	surface_group_is_fine()
