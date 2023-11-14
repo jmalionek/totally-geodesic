@@ -50,14 +50,36 @@ class NormalSurface:
 		The vertices correspond to normal discs in the normal surface and are indexed by the id numbers (see Polygon.get_id_numbers for more information)
 		The edges correspond to edges of the normal surface triangulation and are indexed by the faces of the manifold triangulation on which they lie
 		"""
+		# Want to change the dual graph so that it now stores the face embeddings (the face indices of the tetrahedra)
+		# instead of the triangle number
 		G = nx.MultiDiGraph()
+		DSS = regina.DiscSetSurface(self.surface)
+		T = regina.Triangulation3(self.manifold)
 		for polygon in self.polygons_list:
 			G.add_node(polygon.get_id_numbers())
 		for polygon in self.polygons_list:
-			for index, adj_disc in enumerate(polygon.adjacent_discs):
-				# TODO: SKETCHY since the face indices are not the same for regina and snappy
-				if not G.has_edge(adj_disc.get_id_numbers(), polygon.get_id_numbers(), key=polygon.faces[index].index()):
-					G.add_edge(polygon.get_id_numbers(), adj_disc.get_id_numbers(), key=polygon.faces[index].index())
+			if polygon.is_triangle():
+				arc_list = regina.triDiscArcs[polygon.disc_type]
+			else:
+				arc_list = regina.quadDiscArcs[polygon.disc_type - 4]
+
+			for arc in arc_list:
+				tet_face_number = arc[3]
+				adjacent_disc, adjacent_perm = DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers(), arc))
+
+				# The information for the current edge we are trying to add
+				tail = polygon.get_id_numbers()
+				head = id_numbers_from_DiscSpec(adjacent_disc)
+				key = tet_face_number, T.tetrahedron(polygon.tetrahedron).triangle(tet_face_number).index()
+
+				# The information for the same edge but oriented in the opposite direction
+				opp_tail = id_numbers_from_DiscSpec(adjacent_disc)
+				opp_head = polygon.get_id_numbers()
+				opp_key = adjacent_perm[3], T.tetrahedron(adjacent_disc.tetIndex).triangle(adjacent_perm[3]).index()
+
+				# Checking if the opposite edge is in the graph already so we don't have duplicates
+				if not G.has_edge(opp_tail, opp_head, key=opp_key):
+					G.add_edge(tail, head, key=key)
 		return G
 
 	def fundamental_group_generators(self, return_tree=False):
@@ -728,6 +750,10 @@ class Quad (Polygon):
 	def is_quad(self):
 		return True
 
+def id_numbers_from_DiscSpec(disc_spec):
+	return disc_spec.tetIndex, disc_spec.type, disc_spec.number
+
+
 def vec_to_NormalSurface(vector, M, coord=regina.NS_STANDARD):
 	'''
 	vector is a list of integers, M is snappy manifold
@@ -792,7 +818,6 @@ def from_regina_normal_surface(surface, manifold):
 							disc.faces[edge_index] = face_list[i]
 				disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
 				disc.adjacent_tets[edge_index] = adj_disc.tetIndex
-				# This is the stuff to change?
 	return our_surface
 
 
