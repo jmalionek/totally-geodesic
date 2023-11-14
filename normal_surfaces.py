@@ -792,6 +792,7 @@ def from_regina_normal_surface(surface, manifold):
 							disc.faces[edge_index] = face_list[i]
 				disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
 				disc.adjacent_tets[edge_index] = adj_disc.tetIndex
+				# This is the stuff to change?
 	return our_surface
 
 
