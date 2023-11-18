@@ -113,7 +113,10 @@ def main():
 		else:
 			M.randomize()
 			volumes.append(M.volume())
-	ax.scatter(volumes, times, s = 5, alpha = .05)
+
+	indices = np.random.choice(np.arange(len(volumes)), size=1500)
+	volumes = np.array(volumes)
+	ax.scatter(volumes[indices], times[indices], s = 5, alpha = .05)
 	ax.set_yscale('log')
 	ax.set_xlabel('Manifold volume')
 	ax.set_ylabel('Log of algorithm runtime in seconds')

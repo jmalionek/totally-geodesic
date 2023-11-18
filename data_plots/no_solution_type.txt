@@ -1,0 +1,5 @@
+manifolds where snappy was unable to find a volume since the solution type had no solution
+(was fixed in code by randomizing triangulation, tightEncodings saved in case of future usage) 
+
+5#"#*$"#.%"&"'"&.&0&6("(*(*)")(*"+"+,,"+8-"-6."/"/80"/&1"2"0*3"4"4.3*32443,42
+7#"$"%"%&&"("'")"(6(8*"(8)(+")4*0,")0-",4."-2.6/"-20"08/,0.1"2"22243"4"5"6"4&5*6*6(6(
