@@ -4,6 +4,7 @@ import snappy
 import matplotlib.pyplot as plt
 import normal_surfaces
 import pickle
+import numpy as np
 
 
 def get_all_results(filename_word = None, get_manifolds = False):
@@ -97,20 +98,19 @@ def main():
 
 	dir = '/data/keeling/a/chaeryn2/totally_geodesic/'
 	data, manifolds = get_all_results(get_manifolds=True)
-	times = data['runtime_surfaces'] + data['runtime_gp']
+	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
 
 	fig, ax = plt.subplots()
-	ax.hist(times, num_bins = 30)
-	ax.set_xlabel('Algorithm runtime')
-	fig.save(dir + 'runtime_histogram.png')
+	ax.hist(times, bins = 30, edgecolor = 'black')
+	ax.set_xlabel('Algorithm runtime histogram in seconds')
+	fig.savefig(dir + 'runtime_histogram.png')
 
 	fig, ax = plt.subplots()
-	ax.scatter([M.volume() for M in manifolds], times)
+	volumes = [M.volume() for M in manifolds]
+	ax.scatter(volumes, times, s = 5, alpha = .5)
 	ax.set_xlabel('Manifold Volume')
-	ax.set_ylabel('Algorithm Runtime')
-	fig.save(dir + 'volume_runtime_scatter.png')
-
-	print(number_unfinished())
+	ax.set_ylabel('Algorithm Runtime in seconds')
+	fig.savefig(dir + 'volume_runtime_scatter.png')
 
 if __name__ == '__main__':
 	main()
