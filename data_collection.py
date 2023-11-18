@@ -115,8 +115,8 @@ def main():
 			volumes.append(M.volume())
 	ax.scatter(volumes, times, s = 5, alpha = .05)
 	ax.set_yscale('log')
-	ax.set_xlabel('Manifold Volume')
-	ax.set_ylabel('Algorithm Runtime in seconds')
+	ax.set_xlabel('Manifold volume')
+	ax.set_ylabel('Log of algorithm runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
 
 if __name__ == '__main__':
