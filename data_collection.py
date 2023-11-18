@@ -111,10 +111,10 @@ def main():
 		if 'solution' not in M.solution_type():
 			volumes.append(M.volume())
 		else:
-			print(M.identify(), data['manifold'][i])
 			M.randomize()
 			volumes.append(M.volume())
-	ax.scatter(volumes, times, s = 5, alpha = .5)
+	ax.scatter(volumes, times, s = 5, alpha = .05)
+	ax.set_yscale('log')
 	ax.set_xlabel('Manifold Volume')
 	ax.set_ylabel('Algorithm Runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
