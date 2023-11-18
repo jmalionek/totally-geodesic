@@ -100,7 +100,7 @@ def main():
 	times = data['runtime_surfaces'] + data['runtime_gp']
 
 	fig, ax = plt.subplots()
-	ax.histogram(times, num_bins = 30)
+	ax.hist(times, num_bins = 30)
 	ax.set_xlabel('Algorithm runtime')
 	fig.save(dir + 'runtime_histogram.png')
 
