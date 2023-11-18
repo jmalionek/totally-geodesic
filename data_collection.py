@@ -96,7 +96,7 @@ def number_unfinished():
 
 def main():
 
-	dir = '/data/keeling/a/chaeryn2/totally_geodesic/'
+	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
 	data, manifolds = get_all_results(get_manifolds=True)
 	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
 
@@ -106,8 +106,14 @@ def main():
 	fig.savefig(dir + 'runtime_histogram.png')
 
 	fig, ax = plt.subplots()
-	volumes = [M.volume() for M in manifolds]
-	ax.scatter(volumes, times, s = 5, alpha = .5)
+	manifold_check = [('solution' not in M.solution_type()) for M in manifolds]
+	volumes = []
+	for M in manifolds:
+		if 'solution' not in M.solution_type():
+			volumes.append(M.volume())
+		else:
+			volumes.append(-1)
+	ax.scatter(volumes[manifold_check], times[manifold_check], s = 5, alpha = .5)
 	ax.set_xlabel('Manifold Volume')
 	ax.set_ylabel('Algorithm Runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
