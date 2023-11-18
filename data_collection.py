@@ -106,14 +106,15 @@ def main():
 	fig.savefig(dir + 'runtime_histogram.png')
 
 	fig, ax = plt.subplots()
-	manifold_check = [('solution' not in M.solution_type()) for M in manifolds]
 	volumes = []
-	for M in manifolds:
+	for i, M in enumerate(manifolds):
 		if 'solution' not in M.solution_type():
 			volumes.append(M.volume())
 		else:
-			volumes.append(-1)
-	ax.scatter(volumes[manifold_check], times[manifold_check], s = 5, alpha = .5)
+			print(M.identify(), data['manifold'][i])
+			M.randomize()
+			volumes.append(M.volume())
+	ax.scatter(volumes, times, s = 5, alpha = .5)
 	ax.set_xlabel('Manifold Volume')
 	ax.set_ylabel('Algorithm Runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
