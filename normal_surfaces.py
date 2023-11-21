@@ -74,7 +74,6 @@ class NormalSurface:
 		finished_nodes = []
 		unvisited_nodes = [self.basepoint.get_id_numbers()]
 		while len(unvisited_nodes) != 0:
-			print(unvisited_nodes)
 			polygon = self.get_polygon(*unvisited_nodes.pop())
 			finished_nodes.append(polygon.get_id_numbers())
 			if polygon.is_triangle():
@@ -101,7 +100,6 @@ class NormalSurface:
 					G.add_edge(tail, head, key=key)
 				if head not in unvisited_nodes and head not in finished_nodes:
 					unvisited_nodes.append(head)
-
 		return G
 
 	def fundamental_group_generators(self, return_tree=False):
@@ -111,7 +109,11 @@ class NormalSurface:
 		This function optionally returns the maximal tree also if return_tree is True.
 		"""
 		digraph = self.dual_graph()
-		tree_graph = nx.minimum_spanning_arborescence(digraph)
+		tree_graph = nx.minimum_spanning_arborescence(digraph, preserve_attrs=True)
+		edges = list(tree_graph.edges())
+		for a, b in edges:
+			tree_graph.remove_edge(a,b)
+			tree_graph.add_edge(a, b, list(dict(digraph[a][b]).keys())[0])
 		diff = nx.difference(digraph, tree_graph)
 		if return_tree:
 			return list(diff.edges(keys=True)), tree_graph
@@ -130,7 +132,7 @@ class NormalSurface:
 		# just choose first normal disc in list of discs of normal surface
 
 
-		verbose = True
+		verbose = False
 		if verbose:
 			print('basepoint')
 			print(self.basepoint)
@@ -145,22 +147,32 @@ class NormalSurface:
 			if verbose:
 				print(edge)
 
-			path_to_tail = nx.shortest_path(tree, basepoint_disc.get_id_numbers(), edge[0])
-			path_to_head = nx.shortest_path(tree, basepoint_disc.get_id_numbers(), edge[1])
+			path_to_tail = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[0])
+			path_to_head = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[1])
 			gen_path = []
-			first_half_path = list(path_to_tail) + [edge]
+			first_half_path = list(path_to_tail)
 			for i, tail in enumerate(first_half_path[:-1]):
 				head = first_half_path[i + 1]
-				key = list(tree.get_edge_data(tail, head).keys())[0]
+				key = list(tree.get_edge_data(tail, head).keys())[0][0]
 				tetrahedron = tail[0]
-				gen_path.append(gen_info[tetrahedron]['generators'][key])
+				gen = gen_info[tetrahedron]['generators'][key]
+				if gen != 0:
+					gen_path.append(gen)
 
+			edge_gen = gen_info[edge[0][0]]['generators'][edge[2][0]]
+			if edge_gen != 0:
+				gen_path.append(edge_gen)
 
-			for i, tail in enumerate(path_to_head[::-1][:-1]):
-				head = path_to_head[::-1][i + 1]
-				key = list(tree.get_edge_data(tail, head).keys())[0]
+			gen_path_to_tail = []
+			for i, tail in enumerate(path_to_head[:-1]):
+				head = path_to_head[i + 1]
+				key = list(tree.get_edge_data(tail, head).keys())[0][0]
 				tetrahedron = tail[0]
-				gen_path.append(gen_info[tetrahedron]['generators'][key])
+				# We're gonna reverse this later so that it actually becomes the path back
+				gen = -gen_info[tetrahedron]['generators'][key]
+				if gen != 0:
+					gen_path_to_tail.append(gen)
+			gen_path = gen_path + gen_path_to_tail[::-1]
 
 			if verbose:
 				print('edge_path_to_generator')
@@ -204,6 +216,8 @@ class NormalSurface:
 	def relations_version_2(self, surface_relations = True):
 		all_relations = []  # list of all relations that will be returned
 
+		start_discs = []
+
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		Tr = regina.Triangulation3(self.manifold)
 		DSS = regina.DiscSetSurface(self.surface)
@@ -241,6 +255,7 @@ class NormalSurface:
 			while len(disc_list) > 0:
 				# disc, corner = disc_list.pop(0)
 				disc, corner = disc_list[0]
+				start_discs.append(disc)
 				# find the two arcs on normal disc that intersect the given edge, start_arc will be the one where we find the next disc
 				# at the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
 				start_arc = None
@@ -291,7 +306,25 @@ class NormalSurface:
 				all_relations.append(relation)
 				assert current_disc == disc  # make sure we come back to the disc, arc that we started with
 				assert current_arc == start_arc
-			# TODO: Deal with basepoints for manifold relations
+
+		if not surface_relations:
+			all_unbased_relations = all_relations
+			all_relations = []
+			gens, tree = self.fundamental_group_generators(return_tree=True)
+			for i, relation in enumerate(all_unbased_relations):
+				start_disc = start_discs[i]
+				node_path = nx.shortest_path(tree, self.basepoint.get_id_numbers(), start_disc.get_id_numbers())
+				gen_path = []
+				for i in range(len(node_path) - 1):
+					tail = node_path[i]
+					head = node_path[i+1]
+					key = list(tree.get_edge_data(tail, head).keys())[0][0]
+					tetrahedron = tail[0]
+					gen = info[tetrahedron]['generators'][key]
+					if gen != 0:
+						gen_path.append(gen)
+				relation = gen_path + relation + [-num for num in gen_path[::-1]]
+				all_relations.append(relation)
 		return all_relations
 
 	def sage_group(self, simplified = True):
@@ -323,7 +356,7 @@ class NormalSurface:
 
 	# Should not be included in final code
 	def relations_as_holonomy_matrices(self):
-		relations = self.relations()
+		relations = self.relations_version_2(surface_relations=False)
 		for relation in relations:
 			mat = Tietze_to_matrix(relation, self.manifold)
 			Id = matrix.identity(CC, 2)
@@ -362,7 +395,7 @@ class NormalSurface:
 		Writes the relations for the surface fundamental group in terms of the fundamental group of the manifold
 		"""
 		embedded_relations = self.get_embedded_relations()
-		relations = self.relations()
+		relations = self.relations_version_2(False)
 		assert len(relations) == len(embedded_relations)
 		F = FreeGroup(len(self.fundamental_group_generators()))
 		sage_embedded_relations = [F(rel) for rel in embedded_relations]
@@ -1061,13 +1094,30 @@ def print_all_information():
 	print(S.fundamental_group_embedding())
 
 def surface_group_is_fine():
-	M = snappy.Manifold('m004')
+	M = snappy.Manifold('K15n1234')
 	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
-	G = S.sage_group()
+	G = S.sage_group(False)
+	gens, tree = S.fundamental_group_generators(return_tree=True)
+	print('gens', gens)
+	print('tree edges', tree.edges(keys= True))
+	print(G)
 	Gsimp = G.simplification_isomorphism().codomain()
+	print(Gsimp)
 	print(is_obviously_a_surface_group(Gsimp))
+	for pair in S.relation_check():
+		print(pair)
+	print(S.surface_relations_as_holonomy_matrices())
+	print(S.relations_as_holonomy_matrices())
+
 
 
 
 if __name__ == '__main__':
 	surface_group_is_fine()
+
+# TODO: Get rid of print statements
+# TODO: Make limit set plot better
+# TODO: Rerun all the walkofshame things
+# TODO: Tidy up code
+# TODO: Fork and publish somewhere
+# TODO: Merge branches
