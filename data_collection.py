@@ -96,7 +96,7 @@ def number_unfinished():
 
 def main():
 
-	# dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
+	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
 	# data, manifolds = get_all_results(get_manifolds=True)
 	# with open('data_collected', 'wb') as f:
 	# 	pickle.dump([data, manifolds], f)
