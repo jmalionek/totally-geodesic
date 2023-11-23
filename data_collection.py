@@ -96,18 +96,19 @@ def number_unfinished():
 
 def main():
 
-	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
-	data, manifolds = get_all_results(get_manifolds=True)
-	with open('data_collected', 'wb') as f:
-		pickle.dump([data, manifolds], f)
+	# dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
+	# data, manifolds = get_all_results(get_manifolds=True)
+	# with open('data_collected', 'wb') as f:
+	# 	pickle.dump([data, manifolds], f)
 
 	# in case of repeated use
-	# with open('data_collected', 'rb') as f:
-	# 	data = f[0]
-	# 	manifold = f[1]
+	with open('data_collected', 'rb') as f:
+		data = f[0]
+		manifold = f[1]
 
 	times_enum = np.array(data['runtime_surfaces'])
 	times_tg = np.array(data['runtime_gp'])
+	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
 
 	fig, ax = plt.subplots()
 	ax.hist(times_enum, bins = 30, edgecolor = 'black')
