@@ -102,7 +102,8 @@ def main():
 	# 	pickle.dump([data, manifolds], f)
 
 	# in case of repeated use
-	with open('data_collected', 'rb') as f:
+	with open('data_collected', 'rb') as file:
+		f = pickle.load(file)
 		data = f[0]
 		manifold = f[1]
 
