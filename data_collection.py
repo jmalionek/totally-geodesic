@@ -98,12 +98,26 @@ def main():
 
 	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
 	data, manifolds = get_all_results(get_manifolds=True)
-	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
+	with open('data_collected', 'wb') as f:
+		pickle.dump([data, manifolds], f)
+
+	# in case of repeated use
+	# with open('data_collected', 'rb') as f:
+	# 	data = f[0]
+	# 	manifold = f[1]
+
+	times_enum = np.array(data['runtime_surfaces'])
+	times_tg = np.array(data['runtime_gp'])
 
 	fig, ax = plt.subplots()
-	ax.hist(times, bins = 30, edgecolor = 'black')
-	ax.set_xlabel('Algorithm runtime histogram in seconds')
-	fig.savefig(dir + 'runtime_histogram.png')
+	ax.hist(times_enum, bins = 30, edgecolor = 'black')
+	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
+	fig.savefig(dir + 'runtime_enum_histogram.png')
+
+	fig, ax = plt.subplots()
+	ax.hist(times_tg, bins = 30, edgecolor = 'black')
+	ax.set_xlabel('Runtime of Algorithm 2 in seconds')
+	fig.savefig(dir + 'runtime_tot_geo_histogram.png')
 
 	fig, ax = plt.subplots()
 	volumes = []
@@ -114,9 +128,9 @@ def main():
 			M.randomize()
 			volumes.append(M.volume())
 
-	indices = np.random.choice(np.arange(len(volumes)), size=1500)
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
 	volumes = np.array(volumes)
-	ax.scatter(volumes[indices], times[indices], s = 5, alpha = .05)
+	ax.scatter(volumes[indices], times[indices], s = 5, alpha = .2)
 	ax.set_yscale('log')
 	ax.set_xlabel('Manifold volume')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
