@@ -105,11 +105,13 @@ def main():
 	with open('data_collected', 'rb') as file:
 		f = pickle.load(file)
 		data = f[0]
-		manifold = f[1]
+		manifolds = f[1]
 
 	times_enum = np.array(data['runtime_surfaces'])
 	times_tg = np.array(data['runtime_gp'])
 	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
+
+	print('average runtime: ', np.average(times))
 
 	fig, ax = plt.subplots()
 	ax.hist(times_enum, bins = 30, edgecolor = 'black')
