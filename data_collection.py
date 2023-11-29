@@ -187,6 +187,11 @@ def main():
 	print('Average of enumeration runtime ratios', np.average(times_enum/times))
 	print('Average of algorithm2 runtime ratios', np.average(times_tg/times))
 
+	# <printed results>
+	# average runtime: 1584.3934003688878
+	# Average of enumeration runtime ratios 0.5674393872653163
+	# Average of algorithm2 runtime ratios 0.43256061273468366
+
 
 if __name__ == '__main__':
 	main()
