@@ -126,10 +126,12 @@ def main():
 	fig, ax = plt.subplots()
 	volumes = []
 	tet_dict = {}
+	tetrahedra = []
 	for i, M in enumerate(manifolds):
 		if 'solution' not in M.solution_type():
 			volumes.append(M.volume())
 			tet = M.num_tetrahedra()
+			tetrahedra.append(tet)
 			if tet in tet_dict.keys():
 				tet_dict[tet].append(times[i])
 			else:
@@ -137,6 +139,8 @@ def main():
 		else:
 			M.randomize()
 			volumes.append(M.volume())
+			tet = M.num_tetrahedra()
+			tetrahedra.append(tet)
 			if tet in tet_dict.keys():
 				tet_dict[tet].append(times[i])
 			else:
@@ -169,6 +173,18 @@ def main():
 	ax.set_ylabel('Algorithm runtime in seconds')
 	ax.set_yscale('log')
 	fig.savefig(dir + 'box_plot_num_tets_runtime.png')
+
+	fig, ax = plt.subplots()
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	volumes = np.array(volumes)
+	ax.scatter(volumes[indices], times[indices], s=5, alpha=.2)
+	# ax.set_yscale('log')
+	ax.set_xlabel('Manifold volume')
+	ax.set_ylabel('Algorithm runtime in seconds')
+	ax.legend()
+	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
+
+	print('Average of runtime ratios', np.average(enum_times/times_tg))
 
 if __name__ == '__main__':
 	main()
