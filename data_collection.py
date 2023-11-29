@@ -148,6 +148,7 @@ def main():
 
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
 	volumes = np.array(volumes)
+	tetrahedra = np.array(tetrahedra)
 	ax.scatter(volumes[indices], times[indices], s = 5, alpha = .2)
 	ax.set_yscale('log')
 	ax.set_xlabel('Manifold volume')
@@ -176,12 +177,10 @@ def main():
 
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	volumes = np.array(volumes)
-	ax.scatter(volumes[indices], times[indices], s=5, alpha=.2)
+	ax.scatter(tetrahedra[indices], times[indices], s=5, alpha=.2)
 	# ax.set_yscale('log')
-	ax.set_xlabel('Manifold volume')
+	ax.set_xlabel('Number of tetrahedra')
 	ax.set_ylabel('Algorithm runtime in seconds')
-	ax.legend()
 	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
 
 	print('Average of runtime ratios', np.average(times_tg/times_enum))
