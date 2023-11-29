@@ -177,7 +177,7 @@ def main():
 
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	ax.scatter(tetrahedra[indices], times[indices], s=5, alpha=.2)
+	ax.scatter(tetrahedra[indices], times[indices], s=5)
 	ax.set_yscale('log')
 	ax.set_xlabel('Number of tetrahedra')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
