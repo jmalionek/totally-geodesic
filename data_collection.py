@@ -125,12 +125,22 @@ def main():
 
 	fig, ax = plt.subplots()
 	volumes = []
+	tet_dict = {}
 	for i, M in enumerate(manifolds):
 		if 'solution' not in M.solution_type():
 			volumes.append(M.volume())
+			tet = M.num_tetrahedra()
+			if tet in tet_dict.keys():
+				tet_dict[tet].append(times[i])
+			else:
+				tet_dict[tet] = [times[i]]
 		else:
 			M.randomize()
 			volumes.append(M.volume())
+			if tet in tet_dict.keys():
+				tet_dict[tet].append(times[i])
+			else:
+				tet_dict[tet] = [times[i]]
 
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
 	volumes = np.array(volumes)
@@ -139,6 +149,25 @@ def main():
 	ax.set_xlabel('Manifold volume')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
+
+	fig, ax = plt.subplots()
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	volumes = np.array(volumes)
+	ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
+	ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
+	ax.set_yscale('log')
+	ax.set_xlabel('Manifold volume')
+	ax.set_ylabel('Log of algorithm runtime in seconds')
+	ax.legend()
+	fig.savefig(dir + 'volume_runtime_scatter_both.png')
+
+	fig, ax = plt.subplots()
+	num_tets_list = list(tet_dict.keys()).sorted()
+	data = [tet_dict[i] for i in num_tets_list]
+	ax.boxplot(data, labels = num_tets_list)
+	ax.set_xlabel('Number of tetrahedra')
+	ax.set_ylabel('Algorithm runtime in seconds')
+	fig.savefig(dir + 'box_plot_num_tets_runtime.png')
 
 if __name__ == '__main__':
 	main()
