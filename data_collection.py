@@ -184,7 +184,7 @@ def main():
 	ax.legend()
 	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
 
-	print('Average of runtime ratios', np.average(enum_times/times_tg))
+	print('Average of runtime ratios', np.average(times_enum/times_tg))
 
 if __name__ == '__main__':
 	main()
