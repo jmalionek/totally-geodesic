@@ -178,12 +178,15 @@ def main():
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
 	ax.scatter(tetrahedra[indices], times[indices], s=5)
+	ax.set_xticks(num_tets_list)
 	ax.set_yscale('log')
 	ax.set_xlabel('Number of tetrahedra')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
 	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
 
-	print('Average of runtime ratios', np.average(times_tg/times_enum))
+	print('Average of enumeration runtime ratios', np.average(times_enum/times))
+	print('Average of algorithm2 runtime ratios', np.average(times_tg/times))
+
 
 if __name__ == '__main__':
 	main()
