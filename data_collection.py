@@ -155,7 +155,7 @@ def main():
 	volumes = np.array(volumes)
 	ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
 	ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
-	ax.set_yscale('log')
+	# ax.set_yscale('log')
 	ax.set_xlabel('Manifold volume')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
 	ax.legend()
@@ -167,6 +167,7 @@ def main():
 	ax.boxplot(data, labels = num_tets_list)
 	ax.set_xlabel('Number of tetrahedra')
 	ax.set_ylabel('Algorithm runtime in seconds')
+	ax.set_yscale('log')
 	fig.savefig(dir + 'box_plot_num_tets_runtime.png')
 
 if __name__ == '__main__':
