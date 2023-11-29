@@ -162,7 +162,7 @@ def main():
 	fig.savefig(dir + 'volume_runtime_scatter_both.png')
 
 	fig, ax = plt.subplots()
-	num_tets_list = list(tet_dict.keys()).sorted()
+	num_tets_list = sorted(list(tet_dict.keys()))
 	data = [tet_dict[i] for i in num_tets_list]
 	ax.boxplot(data, labels = num_tets_list)
 	ax.set_xlabel('Number of tetrahedra')
