@@ -184,7 +184,7 @@ def main():
 	# ax.set_ylabel('Log of algorithm runtime in seconds')
 	# fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
 
-	mask = (times > 10)
+	mask = (times > 60)
 	print('Average of enumeration runtime ratios', np.average(times_enum[mask]/times[mask]))
 	print('Average of algorithm2 runtime ratios', np.average(times_tg[mask]/times[mask]))
 
