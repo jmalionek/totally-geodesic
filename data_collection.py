@@ -193,6 +193,7 @@ def main():
 	# Average of enumeration runtime ratios 0.5674393872653163
 	# Average of algorithm2 runtime ratios 0.43256061273468366
 
+	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(times_tg)), size=5000)
 	ax.scatter(times_enum[indices], times_tg[indices], s = 5, alpha = .2)
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
