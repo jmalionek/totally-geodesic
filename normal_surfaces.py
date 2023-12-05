@@ -51,13 +51,55 @@ class NormalSurface:
 		The edges correspond to edges of the normal surface triangulation and are indexed by the faces of the manifold triangulation on which they lie
 		"""
 		G = nx.MultiDiGraph()
+		DSS = regina.DiscSetSurface(self.surface)
+		T = regina.Triangulation3(self.manifold)
+
+		self.manifold._choose_generators(False, False)
+		gen_info = self.manifold._choose_generators_info()
+		basepoint_tet = -1
+		if self.basepoint is None:
+			for entry in gen_info:
+				if entry['generator_path'] == -1:
+					basepoint_tet = entry['index']
+					break
+			basepoint_disc = self.polygons_list[0]
+			for disc in self.polygons_list:
+				if disc.tetrahedron == basepoint_tet:
+					basepoint_disc = disc
+					break
+			self.basepoint = basepoint_disc
+
 		for polygon in self.polygons_list:
 			G.add_node(polygon.get_id_numbers())
-		for polygon in self.polygons_list:
-			for index, adj_disc in enumerate(polygon.adjacent_discs):
-				# TODO: SKETCHY since the face indices are not the same for regina and snappy
-				if not G.has_edge(adj_disc.get_id_numbers(), polygon.get_id_numbers(), key=polygon.faces[index].index()):
-					G.add_edge(polygon.get_id_numbers(), adj_disc.get_id_numbers(), key=polygon.faces[index].index())
+		finished_nodes = []
+		unvisited_nodes = [self.basepoint.get_id_numbers()]
+		while len(unvisited_nodes) != 0:
+			polygon = self.get_polygon(*unvisited_nodes.pop())
+			finished_nodes.append(polygon.get_id_numbers())
+			if polygon.is_triangle():
+				arc_list = regina.triDiscArcs[polygon.disc_type]
+			else:
+				arc_list = regina.quadDiscArcs[polygon.disc_type - 4]
+
+			for arc in arc_list:
+				tet_face_number = arc[3]
+				adjacent_disc, adjacent_perm = DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers()), arc)
+
+				# The information for the current edge we are trying to add
+				tail = polygon.get_id_numbers()
+				head = id_numbers_from_DiscSpec(adjacent_disc)
+				key = tet_face_number, T.tetrahedron(polygon.tetrahedron).triangle(tet_face_number).index()
+
+				# The information for the same edge but oriented in the opposite direction
+				opp_tail = id_numbers_from_DiscSpec(adjacent_disc)
+				opp_head = polygon.get_id_numbers()
+				opp_key = adjacent_perm[3], T.tetrahedron(adjacent_disc.tetIndex).triangle(adjacent_perm[3]).index()
+
+				# Checking if the opposite edge is in the graph already so we don't have duplicates
+				if not G.has_edge(opp_tail, opp_head, key=opp_key):
+					G.add_edge(tail, head, key=key)
+				if head not in unvisited_nodes and head not in finished_nodes:
+					unvisited_nodes.append(head)
 		return G
 
 	def fundamental_group_generators(self, return_tree=False):
@@ -66,13 +108,16 @@ class NormalSurface:
 		These edges correspond to a set of generators of the fundamental group of the normal surface.
 		This function optionally returns the maximal tree also if return_tree is True.
 		"""
-		undirected_dual_graph = self.dual_graph().to_undirected()
-		tree_graph = nx.minimum_spanning_tree(undirected_dual_graph)
-		diff = nx.difference(undirected_dual_graph, tree_graph)
-		nx.draw(tree_graph)
+		digraph = self.dual_graph()
+		tree_graph = nx.minimum_spanning_arborescence(digraph, preserve_attrs=True)
+		edges = list(tree_graph.edges())
+		for a, b in edges:
+			tree_graph.remove_edge(a,b)
+			tree_graph.add_edge(a, b, list(dict(digraph[a][b]).keys())[0])
+		diff = nx.difference(digraph, tree_graph)
 		if return_tree:
 			return list(diff.edges(keys=True)), tree_graph
-		return diff.edges
+		return diff.edges(keys = True)
 
 	def fundamental_group_embedding(self):
 		"""
@@ -82,101 +127,59 @@ class NormalSurface:
 		"""
 		self.manifold._choose_generators(False, False)
 		gen_info = self.manifold._choose_generators_info()
-		basepoint_tet = -1
 		# choose normal disc that will be used as the basepoint of the fundamental group of the normal surface
 		# try to choose normal disc inside basepoint tetrahedron of manifold, if there are no discs inside this tetrahedron
 		# just choose first normal disc in list of discs of normal surface
-		for entry in gen_info:
-			if entry['generator_path'] == -1:
-				basepoint_tet = entry['index']
-				break
-		basepoint_disc = self.polygons_list[0]
-		for disc in self.polygons_list:
-			if disc.tetrahedron == basepoint_tet:
-				basepoint_disc = disc
-				break
-		self.basepoint = basepoint_disc
-		verbose = True
+
+
+		verbose = False
 		if verbose:
 			print('basepoint')
 			print(self.basepoint)
+
 		cycles = []
 		node_paths = []
 		generators, tree = self.fundamental_group_generators(True)
 		# add paths from/to basepoint to given edge (generator corresponds to a single edge outside the tree) and creates a loop in the fundamental group
+		gens_in_M = []
 		for edge in generators:
+
 			if verbose:
 				print(edge)
-			path_to_edge = nx.shortest_path(tree, basepoint_disc.get_id_numbers(), edge[0])
-			path_from_edge = nx.shortest_path(tree, edge[1], basepoint_disc.get_id_numbers())
-			edge_path = []
-			for i in range(len(path_to_edge) - 1):
-				edge_path.append((path_to_edge[i], path_to_edge[i+1], list(tree.get_edge_data(path_to_edge[i], path_to_edge[i+1]).keys())[0]))
+
+			path_to_tail = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[0])
+			path_to_head = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[1])
+			gen_path = []
+			first_half_path = list(path_to_tail)
+			for i, tail in enumerate(first_half_path[:-1]):
+				head = first_half_path[i + 1]
+				key = list(tree.get_edge_data(tail, head).keys())[0][0]
+				tetrahedron = tail[0]
+				gen = gen_info[tetrahedron]['generators'][key]
+				if gen != 0:
+					gen_path.append(gen)
+
+			edge_gen = gen_info[edge[0][0]]['generators'][edge[2][0]]
+			if edge_gen != 0:
+				gen_path.append(edge_gen)
+
+			gen_path_to_tail = []
+			for i, tail in enumerate(path_to_head[:-1]):
+				head = path_to_head[i + 1]
+				key = list(tree.get_edge_data(tail, head).keys())[0][0]
+				tetrahedron = tail[0]
+				# We're gonna reverse this later so that it actually becomes the path back
+				gen = -gen_info[tetrahedron]['generators'][key]
+				if gen != 0:
+					gen_path_to_tail.append(gen)
+			gen_path = gen_path + gen_path_to_tail[::-1]
+
 			if verbose:
 				print('edge_path_to_generator')
-				print(edge_path)
-			edge_path.append(edge)
-			for i in range(len(path_from_edge) - 1):
-				edge_path.append((path_from_edge[i], path_from_edge[i+1], list(tree.get_edge_data(path_from_edge[i], path_from_edge[i+1]).keys())[0]))
-			cycles.append(edge_path)
-			if verbose:
-				print('edge_path')
-				print(edge_path)
-			node_paths.append(path_to_edge + path_from_edge)
-			if verbose:
-				print('node_path')
-				print(path_to_edge + path_from_edge)
-		gens_in_M = []
-		for i, cycle in enumerate(cycles):
-			gens_in_M.append(self.find_manifold_generator_in_tree(node_paths[i], cycle))
+				print(gen_path)
+			gens_in_M.append(gen_path)
 		return gens_in_M
 
-	def find_manifold_generator(self, edge):
-		"""
-		Given an edge in the dual graph of the normal surface returns the corresponding generator in the fundamental group of the manifold.
-		This generator is oriented following the orientation on the edge.
-		"""
-		T = self.surface.triangulation()
-		self.manifold._choose_generators(True, True)
-		info = self.manifold._choose_generators_info()
-
-		starting_tet = self.get_polygon(*edge[0]).tetrahedron
-		ending_tet = self.get_polygon(*edge[1]).tetrahedron
-		starting_disc = self.get_polygon(*edge[0])
-		ending_disc = self.get_polygon(*edge[1])
-		# index = starting_disc.adjacent_discs.index(ending_disc)
-		triangle_number = edge[2]
-		regina_triangle = T.triangle(triangle_number)
-
-
-		if starting_disc.is_triangle():
-			disc_type = starting_disc.disc_type
-			face_index = regina.triDiscArcs[disc_type][index][3]  # last digit of permutation gives the index of the face inside the tetrahedron (0 ~ 3)
-		else:
-			disc_type = starting_disc.disc_type - 4
-			face_index = regina.quadDiscArcs[disc_type][index][3]  # last digit of permutation gives the index of the face inside the tetrahedron (0 ~ 3)
-		gen = info[starting_tet]['generators'][face_index]
-		return gen
-
-	def find_manifold_generator_in_tree(self, node_path, edge_path):
-		"""
-		Given a path written as a list of consecutive edges and consecutive vertices returns a list of the corresponding generators
-		in the fundamental group of the manifold.
-		These generators are oriented consistently with the orientation of the nodes on the path.
-		"""
-		# Given a path in a graph retrieves the list of edges and list of nodes, then compares these two lists to find the generator
-		# with the right orientation
-		list_gens = []
-		for i, edge in enumerate(edge_path):
-			if edge[0] == node_path[i]:
-				gen = self.find_manifold_generator(edge)
-				if gen != 0:
-					list_gens.append(gen)
-			elif edge[1] == node_path[i]:
-				gen = -self.find_manifold_generator(edge)
-				if gen != 0:
-					list_gens.append(gen)
-		return list_gens
 
 	def intersecting_edges(self, normal_disc, return_vertex_pairs=False):
 		"""
@@ -210,196 +213,10 @@ class NormalSurface:
 			edge_indices.append(T.Tetrahedra[tet_num].Class[snappy.snap.t3mlite.bitmap(e)].Index)
 		return edge_indices
 
-	def relations(self):
-		"""
-		Computes the relations of the fundamental group of the surface written in terms of the generators of the manifold fundamental group.
-		Erring on the side of caution the result includes a lot of relations that are redundant.
-		"""
-		# TODO: APPARENTLY, snappy and regina do not always have the same information coming from the same manifold???
-		# Look at the output of this code on the surface [1,1,1,1,0,0,0]*3 for the knot 5_2.
-		# Known disparities: The index of the triangles and edges in snappy and regina do not line up (again, see 5_2)
-		# TODO: Because of this, we need to examine every place where we use a correspondence between regina and the snappy Mcomplex/Triangulation
-
-		# DONE: We wrote code which checks if the tetrahedra have the same internal ordering on the vertices and ran it on a ton of things
-		# def check_the_same(M):
-		# 	Mr = regina.Triangulation3(M)
-		# 	T = Mcomplex(M)
-		# 	for i in range(M.num_tetrahedra()):
-		# 		tet_snappy = T.Tetrahedra[i]
-		# 		tet_regina = Mr.tetrahedron(i)
-		# 		for face_index in range(4):
-		# 			snappy_perm = tet_snappy.Gluing[15 - 2 ** face_index]
-		# 			regina_perm = tet_regina.adjacentGluing(face_index)
-		# 			regina_perm = [regina_perm[i] for i in range(4)]
-		# 			print(snappy_perm, regina_perm)
-
-
-		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
-		T_regina = regina.Triangulation3(self.manifold)
-		# We need this to determine the basepoint
-		self.fundamental_group_embedding()
-		relators = []
-
-		self.manifold._choose_generators(True, True)
-		info = self.manifold._choose_generators_info()
-
-		for normal_disc in self.polygons_list:
-			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
-
-				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
-				relator = []
-				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
-				edge_pair = self.intersecting_edges(normal_disc, True)[i]
-
-				# actual snappy edge
-				edge = T.Edges[edge_index]
-
-				# loops over the triangles glued to our edge until it finds the right arrow corresponding to our normal disc
-				# needed because snappy has an internal ordering on these arrows
-				arrow = edge.get_arrow()
-
-				while True:
-					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_pair) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
-						break
-					else:
-						arrow = arrow.next()
-				current_disc = normal_disc
-				current_arrow = arrow
-				print(edge.valence())
-				for n in range(edge.valence()):
-					# we look at which face we are gluing our normal disc across
-					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
-					# corresponds to information stored in 'arrow'
-					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
-					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
-					face_index = face.index()
-					# find index of tetrahedron on which our normal disc lies in
-					tetrahedron_index = arrow.Tetrahedron.Index
-
-					print(current_disc, face_index)
-					# find generator
-					gen = info[tetrahedron_index]['generators'][face_index_in_tetrahedron]
-
-					# stuff needed to find the next disc
-					current_disc_face_index = [face.index() for face in current_disc.faces]
-					next_index = current_disc_face_index.index(face_index)
-					current_disc = current_disc.adjacent_discs[next_index]
-					current_arrow = current_arrow.next()
-
-
-
-					if gen != 0:
-						relator.append(gen)
-
-					# in case the normal disc we are at is the last one check that it glues back to the first disc
-					if n == edge.valence() - 1:
-						assert current_disc == normal_disc
-
-				# find paths from/to basepoint and append to relators
-				tree = self.fundamental_group_generators(return_tree=True)[1]
-				node_path = nx.shortest_path(tree, self.basepoint.get_id_numbers(), normal_disc.get_id_numbers())  # list of nodes in tree
-				edge_path = []
-				for i in range(len(node_path) - 1):
-					edge_path.append((node_path[i], node_path[i + 1],
-									  list(tree.get_edge_data(node_path[i], node_path[i + 1]).keys())[0]))
-
-				start_path_relator = self.find_manifold_generator_in_tree(node_path, edge_path)
-				end_path_relator = [-n for n in start_path_relator[::-1]]
-				relator = start_path_relator + relator + end_path_relator
-				relators.append(relator)
-		return relators
-
-	def surface_relations(self):
-		"""
-		Get the relations in a presentation of the fundamental group of the surface when used with the generators
-		from the fundamental_group_generators function.
-		TODO: Run the relations checkers on a bunch of things
-		TODO: It seems like relations is working (mostly) fine, but surface_relations is bad
-		TODO: Rewrite relations :( :( :( BUT ACTUALLY THIS ONE 8/31/2023
-		TODO: There can be two discs which are glued to eachother across the same face MULTIPLE times (see m006 boundary torus) 8/29/2023
-		TODO: Use m004 as an example to debug 8/31/2023
-		"""
-		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
-		T_regina = regina.Triangulation3(self.manifold)
-		# We need this to determine the basepoint
-		self.fundamental_group_embedding()
-		relators = []
-		verbose = False
-
-		for normal_disc in self.polygons_list:
-			for i, edge_index in enumerate(self.intersecting_edges(normal_disc)):
-
-				if verbose:
-					print('normal_disc', normal_disc)
-
-					print('starting edge', edge_index)
-					corner = T.Edges[edge_index].Corners[0]
-					print('corner', corner)
-
-
-				# will contain indices of faces in the triangulation (where the normal discs are glued across) that correspond to a single relation
-				relator = []
-				# the edge on the tetrahedron that intersect our normal disc as a pair of endpoint vertices
-				edge_embedding = self.intersecting_edges(normal_disc, True)[i]
-				# actual snappy edge
-				edge = T.Edges[edge_index]
-
-				# loops over the triangles glued to our edge until it finds the right arrow corresponding to our normal disc
-				# needed because snappy has an internal ordering on these arrows
-				arrow = edge.get_arrow()
-				while True:
-					if arrow.Edge == snappy.snap.t3mlite.simplex.bitmap(edge_embedding) and arrow.Tetrahedron.Index == normal_disc.tetrahedron:
-						break
-					else:
-						arrow = arrow.next()
-				current_disc = normal_disc
-				current_arrow = arrow
-				if verbose:
-					print('starting arrow', current_arrow)
-				# print(edge.valence())
-				for n in range(edge.valence()):
-					# we look at which face we are gluing our normal disc across
-					# we take the index of this face (0, 1, 2, 3) with respect to the tetrahedron that it lies in
-					# corresponds to information stored in 'arrow'
-					if verbose:
-						print()
-						print()
-						print('current_disc', current_disc)
-						print('current_disc neighbors', current_disc.adjacent_discs)
-						print('current_disc adjacent faces', current_disc.faces)
-						print(arrow)
-					face_index_in_tetrahedron = snappy.snap.t3mlite.simplex.FaceIndex[arrow.Face]  # is a decimal, not binary!
-					face = T_regina.tetrahedron(arrow.Tetrahedron.Index).triangle(face_index_in_tetrahedron)
-					face_index = face.index()
-					if verbose:
-						print('face_index', face_index)
-					# find index of tetrahedron on which our normal disc lies in
-					tetrahedron_index = arrow.Tetrahedron.Index
-
-					# stuff needed to find the next disc
-					current_disc_face_index = [face.index() for face in current_disc.faces]
-					if verbose:
-						print(current_disc_face_index)
-					next_index = current_disc_face_index.index(face_index)
-					next_disc = current_disc.adjacent_discs[next_index]
-
-					# find generator
-					gen = self.surface_generator_of_edge(current_disc.get_id_numbers(), next_disc.get_id_numbers(), face_index)
-
-					if gen != 0:
-						relator.append(gen)
-
-					# in case the normal disc we are at is the last one check that it glues back to the first disc
-					if n == edge.valence() - 1:
-						assert next_disc == normal_disc
-
-					current_arrow = current_arrow.next()
-					current_disc = next_disc
-				relators.append(relator)
-		return relators
-
 	def relations_version_2(self, surface_relations = True):
 		all_relations = []  # list of all relations that will be returned
+
+		start_discs = []
 
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
 		Tr = regina.Triangulation3(self.manifold)
@@ -408,7 +225,7 @@ class NormalSurface:
 		self.manifold._choose_generators(True, True)
 		info = self.manifold._choose_generators_info()
 
-		generators, tree = self.fundamental_group_generators(return_tree=True)
+		self.fundamental_group_generators(return_tree=True)
 
 		num_edges = len(Tr.edges())
 
@@ -438,6 +255,7 @@ class NormalSurface:
 			while len(disc_list) > 0:
 				# disc, corner = disc_list.pop(0)
 				disc, corner = disc_list[0]
+				start_discs.append(disc)
 				# find the two arcs on normal disc that intersect the given edge, start_arc will be the one where we find the next disc
 				# at the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
 				start_arc = None
@@ -469,7 +287,7 @@ class NormalSurface:
 						# get relations in terms of the fundamental group of the surface
 						regina_tet = Tr.tetrahedron(next_disc.tetIndex)
 						regina_face = regina_tet.triangle(next_arc[3])
-						gen = self.surface_generator_of_edge(current_disc, next_our_disc, regina_face.index())
+						gen = self.surface_generator_of_edge(current_disc, next_our_disc, (current_arc[3], next_arc[3]))
 						if gen != 0:
 							relation.append(gen)
 					else:
@@ -488,7 +306,25 @@ class NormalSurface:
 				all_relations.append(relation)
 				assert current_disc == disc  # make sure we come back to the disc, arc that we started with
 				assert current_arc == start_arc
-			# TODO: Deal with basepoints for manifold relations
+
+		if not surface_relations:
+			all_unbased_relations = all_relations
+			all_relations = []
+			gens, tree = self.fundamental_group_generators(return_tree=True)
+			for i, relation in enumerate(all_unbased_relations):
+				start_disc = start_discs[i]
+				node_path = nx.shortest_path(tree, self.basepoint.get_id_numbers(), start_disc.get_id_numbers())
+				gen_path = []
+				for i in range(len(node_path) - 1):
+					tail = node_path[i]
+					head = node_path[i+1]
+					key = list(tree.get_edge_data(tail, head).keys())[0][0]
+					tetrahedron = tail[0]
+					gen = info[tetrahedron]['generators'][key]
+					if gen != 0:
+						gen_path.append(gen)
+				relation = gen_path + relation + [-num for num in gen_path[::-1]]
+				all_relations.append(relation)
 		return all_relations
 
 	def sage_group(self, simplified = True):
@@ -520,7 +356,7 @@ class NormalSurface:
 
 	# Should not be included in final code
 	def relations_as_holonomy_matrices(self):
-		relations = self.relations()
+		relations = self.relations_version_2(surface_relations=False)
 		for relation in relations:
 			mat = Tietze_to_matrix(relation, self.manifold)
 			Id = matrix.identity(CC, 2)
@@ -559,7 +395,7 @@ class NormalSurface:
 		Writes the relations for the surface fundamental group in terms of the fundamental group of the manifold
 		"""
 		embedded_relations = self.get_embedded_relations()
-		relations = self.relations()
+		relations = self.relations_version_2(False)
 		assert len(relations) == len(embedded_relations)
 		F = FreeGroup(len(self.fundamental_group_generators()))
 		sage_embedded_relations = [F(rel) for rel in embedded_relations]
@@ -567,9 +403,9 @@ class NormalSurface:
 		return zip(sage_embedded_relations, sage_relations)
 
 
-	def surface_generator_of_edge(self, initial, end, face):
+	def surface_generator_of_edge(self, initial, end, faces):
 		"""
-		Given two normal discs and the faces along which they are glued across, finds the index of an edge in the list of edges
+		Given two normal discs and the face of the initial tetrahedron which they are glued across, finds the index of an edge in the list of edges
 		of the normal surface that count as generators of its fundamental group.
 		The normal discs can either be given as Polygon instances or by their ID numbers.
 		The face should be given as its index inside the triangulation.
@@ -578,16 +414,18 @@ class NormalSurface:
 			initial = initial.get_id_numbers()
 		if isinstance(end, Polygon):
 			end = end.get_id_numbers()
+		this_face, other_face = faces
 		generators, tree = self.fundamental_group_generators(True)
+
 		for index, gen in enumerate(generators):
-			if initial == gen[0] and end == gen[1] and face == gen[2]:
+			if initial == gen[0] and end == gen[1] and this_face == gen[2][0]:
 				return index + 1
-			elif initial == gen[1] and end == gen[0] and face == gen[2]:
+			elif initial == gen[1] and end == gen[0] and other_face == gen[2][0]:
 				return -(index + 1)
 		for gen in tree.edges(keys=True):
-			if initial == gen[0] and end == gen[1] and face == gen[2]:
+			if initial == gen[0] and end == gen[1] and this_face == gen[2][0]:
 				return 0
-			elif initial == gen[1] and end == gen[0] and face == gen[2]:
+			elif initial == gen[1] and end == gen[0] and other_face == gen[2][0]:
 				return 0
 		raise RuntimeError("An edge was given which was not in the surface")
 
@@ -727,6 +565,10 @@ class Quad (Polygon):
 
 	def is_quad(self):
 		return True
+
+def id_numbers_from_DiscSpec(disc_spec):
+	return disc_spec.tetIndex, disc_spec.type, disc_spec.number
+
 
 def vec_to_NormalSurface(vector, M, coord=regina.NS_STANDARD):
 	'''
@@ -1253,13 +1095,30 @@ def print_all_information():
 	print(S.fundamental_group_embedding())
 
 def surface_group_is_fine():
-	M = snappy.Manifold('m004')
+	M = snappy.Manifold('K15n1234')
 	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
-	G = S.sage_group()
+	G = S.sage_group(False)
+	gens, tree = S.fundamental_group_generators(return_tree=True)
+	print('gens', gens)
+	print('tree edges', tree.edges(keys= True))
+	print(G)
 	Gsimp = G.simplification_isomorphism().codomain()
+	print(Gsimp)
 	print(is_obviously_a_surface_group(Gsimp))
+	for pair in S.relation_check():
+		print(pair)
+	print(S.surface_relations_as_holonomy_matrices())
+	print(S.relations_as_holonomy_matrices())
+
 
 
 
 if __name__ == '__main__':
 	surface_group_is_fine()
+
+# TODO: Get rid of print statements
+# TODO: Make limit set plot better
+# TODO: Rerun all the walkofshame things
+# TODO: Tidy up code
+# TODO: Fork and publish somewhere
+# TODO: Merge branches
