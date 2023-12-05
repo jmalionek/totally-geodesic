@@ -125,13 +125,15 @@ if __name__ == '__main__':
         too_long_list = [int(num) for num in too_long_list]
 
     for i in range(task, 279649, 200):
+        found = False
         for filename in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
             if 'link_info_%i'%i in filename:
+                found = True
                 break
-            else:
-                if i not in too_long_list:
-                    M = snappy.HTLinkExteriors(alternating=False)[7.2:][i]
-                    mfld_list.append([i, M, M.num_tetrahedra()])
+        if not found:
+            if i not in too_long_list:
+                M = snappy.HTLinkExteriors(alternating=False)[7.2:][i]
+                mfld_list.append([i, M, M.num_tetrahedra()])
 
     mfld_list_num_tet = sorted(mfld_list, key=lambda manifold:manifold[2])
     for manifold_info in mfld_list_num_tet:
