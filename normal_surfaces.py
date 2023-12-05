@@ -970,20 +970,21 @@ def boundary_to_surface(M):
 	surface_vector = [1, 1, 1, 1, 0, 0, 0] * num_tet
 	return regina.NormalSurface(M, regina.NS_STANDARD, surface_vector)
 
-def find_surfaces(vertex_surfaces, g):
+def find_surfaces(vertex_surfaces, e):
     '''
     vertex_surfaces: list of regina normal surfaces that are vertex surfaces
+    modified to return all surfaces of a given euler characteristic (not genus)
     '''
     NS = vertex_surfaces
     NS_nscomplex = [surfaces.NormalSurface(S, i) for i, S in enumerate(NS) if S.eulerChar() < 0]
     all_faces = faces.admissible_faces(NS_nscomplex)
     all_surfaces = []
     for AF in all_faces:
-        all_surfaces = all_surfaces + AF.surfaces_genus_in_interior(g)
+        all_surfaces = all_surfaces + AF.surfaces_euler_in_interior(e)
     return all_surfaces
 
 def main():
-	import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 	import doubling
 	M = snappy.Manifold('10_135')
 	print(f'num tetrahedra: {M.num_tetrahedra()}')

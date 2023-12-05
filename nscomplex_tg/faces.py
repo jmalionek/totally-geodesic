@@ -192,6 +192,17 @@ class AdmissibleFace(object):
                 ans.append(S)
         return ans
 
+    def surfaces_euler_in_interior(self, euler):
+        T = self.F0.triangulation
+        ans = []
+        for quad_vec in self._quad_vectors_in_interior(euler):
+            S = regina_util.normal_surface_from_quads(T, quad_vec)
+            assert regina_util.to_int(S.eulerChar()) == euler
+            if S.isConnected():
+                ans.append(S)
+        return ans
+
+
 
 
 def admissible_faces(surfaces,
