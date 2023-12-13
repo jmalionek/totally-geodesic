@@ -127,8 +127,6 @@ def extract_vector(surface, coordinates='standard'):
                 ans.append(S.triangles(i, j))
         for j in range(3):
             ans.append(S.quads(i, j))
-        for j in range(3):
-            ans.append(S.octs(i, j))
 
     return [to_int(a) for a in ans]
 

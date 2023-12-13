@@ -346,8 +346,9 @@ class NormalSurface:
 	# Should not be included in final code
 	def surface_relations_as_holonomy_matrices(self):
 		relations = self.get_embedded_relations()
+		G = self.manifold.fundamental_group(simplify_presentation=False)
 		for embedded_rel in relations:
-			mat = Tietze_to_matrix(embedded_rel, self.manifold)
+			mat = Tietze_to_matrix(embedded_rel, G)
 			Id = matrix.identity(CC, 2)
 			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
 				print(embedded_rel)
@@ -357,8 +358,9 @@ class NormalSurface:
 	# Should not be included in final code
 	def relations_as_holonomy_matrices(self):
 		relations = self.relations_version_2(surface_relations=False)
+		G = self.manifold.fundamental_group(simplify_presentation=False)
 		for relation in relations:
-			mat = Tietze_to_matrix(relation, self.manifold)
+			mat = Tietze_to_matrix(relation, G)
 			Id = matrix.identity(CC, 2)
 			print(mat)
 			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
@@ -452,7 +454,8 @@ class NormalSurface:
 		If a file name is not given the plot will be saved as limit_set.png.
 		"""
 		gens = self.fundamental_group_embedding()
-		gens_matrix = [Tietze_to_matrix(gen, self.manifold) for gen in gens]
+		G = self.manifold.fundamental_group(simplify_presentation=False)
+		gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
 		gens_matrix = gens_matrix + [mat.inverse() for mat in gens_matrix]
 		gens_excludeI = []
 		I = matrix.identity(CC, 2)
@@ -612,29 +615,40 @@ def from_regina_normal_surface(surface, manifold):
 
 	for disc in our_surface.polygons_list:
 		if disc.is_triangle():
-			discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
-			for edge_index, perm in enumerate(regina.triDiscArcs[disc.disc_type]):
-				adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
-				face_index = perm[3]
-				for i, embeddings in enumerate(face_gluings):
-					for embedding in embeddings:
-						if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
-							disc.faces[edge_index] = face_list[i]
-				# WHY BEN?!
-				disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
-				disc.adjacent_tets[edge_index] = adj_disc.tetIndex
+			glue_triangles(DSS, disc, face_gluings, face_list, our_surface)
 		elif disc.is_quad():
-			discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
-			for edge_index, perm in enumerate(regina.quadDiscArcs[disc.disc_type - 4]):
-				adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
-				face_index = perm[3]
-				for i, embeddings in enumerate(face_gluings):
-					for embedding in embeddings:
-						if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
-							disc.faces[edge_index] = face_list[i]
-				disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
-				disc.adjacent_tets[edge_index] = adj_disc.tetIndex
+			glue_quads(DSS, disc, face_gluings, face_list, our_surface)
 	return our_surface
+
+
+def glue_quads(DSS, disc, face_gluings, face_list, our_surface):
+	discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
+	for edge_index, perm in enumerate(regina.quadDiscArcs[disc.disc_type - 4]):
+		adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
+		face_index = perm[3]
+		for i, embeddings in enumerate(face_gluings):
+			for embedding in embeddings:
+				if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
+					disc.faces[edge_index] = face_list[i]
+					break
+
+		disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
+		disc.adjacent_tets[edge_index] = adj_disc.tetIndex
+
+
+def glue_triangles(DSS, disc, face_gluings, face_list, our_surface):
+	discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
+	for edge_index, perm in enumerate(regina.triDiscArcs[disc.disc_type]):
+		adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
+		face_index = perm[3]
+		for i, embeddings in enumerate(face_gluings):
+			for embedding in embeddings:
+				if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
+					disc.faces[edge_index] = face_list[i]
+					break
+		# WHY BEN?!
+		disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
+		disc.adjacent_tets[edge_index] = adj_disc.tetIndex
 
 
 def Tietze_to_string(word):
@@ -643,8 +657,12 @@ def Tietze_to_string(word):
 	return ''.join([our_alphabet[index] for index in word])
 
 
-def Tietze_to_matrix(word, M):
-	return M.fundamental_group(simplify_presentation=False).SL2C(Tietze_to_string(word))
+def Tietze_to_matrix(word, G):
+	"""
+	Given a word in the snappy fundamental group G (coming from a call to fundamental_group on a manifold M), gives the
+	SL2(C) matrix corresponding to it
+	"""
+	return G.SL2C(Tietze_to_string(word))
 
 
 def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
@@ -729,7 +747,8 @@ def surface_generators(surface, manifold, SL2C=True):
 	our_surface = from_regina_normal_surface(surface, manifold)
 	generators = our_surface.fundamental_group_embedding()
 	if SL2C:
-		return [Tietze_to_matrix(word, manifold) for word in generators]
+		G = M.fundamental_group(simplify_presentation=False)
+		return [Tietze_to_matrix(word, G) for word in generators]
 	else:
 		return [Tietze_to_string(word) for word in generators]
 
@@ -920,7 +939,8 @@ def main3():
 
 	gens = boundary_surface.fundamental_group_embedding()
 	relations = boundary_surface.relations()
-	gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+	G = M.fundamental_group(simplify_presentation=False)
+	gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
 	gens_string = [Tietze_to_string(gen) for gen in gens]
 	# print(len(boundary_surface.polygons_list))
 
@@ -931,7 +951,8 @@ def main3():
 
 	for rel in relations:
 		print(Tietze_to_string(rel))
-		print(Tietze_to_matrix(rel, M))
+		G = M.fundamental_group(simplify_presentation=False)
+		print(Tietze_to_matrix(rel, G))
 	# for i in range(len(gens)):
 	# 	for j in range(len(gens)):
 	# 		if i == j:
@@ -991,7 +1012,8 @@ def main5():
 		all_real = True
 		our_surface = from_regina_normal_surface(surface, M)
 		gens = our_surface.fundamental_group_embedding()
-		gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+		G = M.fundamental_group(simplify_presentation=False)
+		gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
 		comb = combinations(list(range(len(gens))), 3)
 		for c in list(comb):
 			gen = gens_matrix[c[0]] * gens_matrix[c[1]] * gens_matrix[c[2]]

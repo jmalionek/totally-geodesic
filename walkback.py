@@ -16,6 +16,8 @@ import math
 import time
 import multiprocessing
 import gc
+
+import nscomplex_tg.regina_util
 from normal_surfaces import *
 from itertools import combinations
 from nscomplex_tg import regina_util, surfaces, enumerate_surfaces
@@ -41,7 +43,7 @@ def detect_totally_geodesic(manifold, index):
 
     vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED)  # algHints=regina.NS_VERTEX_DD not needed
     vertex_surfaces_ess = [S for S in vertex_surfaces if not obviously_compressible(S)]
-    vertex_surfaces_vec = [from_regina_normal_surface(S, M).get_vector() for S in vertex_surfaces]
+    vertex_surfaces_vec = [nscomplex_tg.regina_util.extract_vector(S) for S in vertex_surfaces]
 
     tok = time.perf_counter()
 
@@ -68,6 +70,7 @@ def detect_totally_geodesic(manifold, index):
     tot_geo_surfaces = []
     potential_tot_geo_surfaces = []  # these are surfaces that are orientable and whose traces are all real,
                                      # need to apply steps g, h of Algorithm 2 using nscomplex to check for totally geodesic
+    G = M.fundamental_group(simplify_presentation=False)
     for surface in incomp_our_surfaces:
         orientable = surface.surface.isOrientable()
         all_real = True
@@ -78,7 +81,7 @@ def detect_totally_geodesic(manifold, index):
             double_vec = tuple(2*x for x in vec)
             double_surface = vec_to_NormalSurface(double_vec, M)
             gens = double_surface.fundamental_group_embedding()
-        gens_matrix = [Tietze_to_matrix(gen, M) for gen in gens]
+        gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
         comb = list(combinations(list(range(len(gens))), 1)) \
                + list(combinations(list(range(len(gens))), 2)) \
                + list(combinations(list(range(len(gens))), 3))
@@ -110,10 +113,10 @@ def detect_totally_geodesic(manifold, index):
               'tot_geo': tot_geo_surfaces,
               'potential_tot_geo': potential_tot_geo_surfaces}
 
-    directory = '/data/keeling/a/chaeryn2/computation_outputs/'
-    filename = f'link_info_{i}_{M.name()}'
-    with open(directory+filename, 'wb') as file:
-        pickle.dump(result, file)
+    # directory = '/data/keeling/a/chaeryn2/computation_outputs/'
+    # filename = f'link_info_{i}_{M.name()}'
+    # with open(directory+filename, 'wb') as file:
+    #     pickle.dump(result, file)
 
 
 if __name__ == '__main__':
