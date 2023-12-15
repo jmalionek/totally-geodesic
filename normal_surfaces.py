@@ -27,6 +27,8 @@ class NormalSurface:
 		self.surface = surface
 		self.manifold = manifold
 		self.basepoint = None
+		self.edges = None
+		self.tree = None
 
 	def get_vector(self):
 		"""
@@ -108,16 +110,20 @@ class NormalSurface:
 		These edges correspond to a set of generators of the fundamental group of the normal surface.
 		This function optionally returns the maximal tree also if return_tree is True.
 		"""
-		digraph = self.dual_graph()
-		tree_graph = nx.minimum_spanning_arborescence(digraph, preserve_attrs=True)
-		edges = list(tree_graph.edges())
-		for a, b in edges:
-			tree_graph.remove_edge(a,b)
-			tree_graph.add_edge(a, b, list(dict(digraph[a][b]).keys())[0])
-		diff = nx.difference(digraph, tree_graph)
+		if self.edges is None:
+			digraph = self.dual_graph()
+			tree_graph = nx.minimum_spanning_arborescence(digraph, preserve_attrs=True)
+			edges = list(tree_graph.edges())
+			for a, b in edges:
+				tree_graph.remove_edge(a,b)
+				tree_graph.add_edge(a, b, list(dict(digraph[a][b]).keys())[0])
+			diff = nx.difference(digraph, tree_graph)
+			self.edges = list(diff.edges(keys=True))
+			self.tree = tree_graph
+
 		if return_tree:
-			return list(diff.edges(keys=True)), tree_graph
-		return diff.edges(keys = True)
+			return self.edges, self.tree
+		return self.edges
 
 	def fundamental_group_embedding(self):
 		"""
@@ -213,7 +219,7 @@ class NormalSurface:
 			edge_indices.append(T.Tetrahedra[tet_num].Class[snappy.snap.t3mlite.bitmap(e)].Index)
 		return edge_indices
 
-	def relations_version_2(self, surface_relations = True):
+	def relations(self, surface_relations = True):
 		all_relations = []  # list of all relations that will be returned
 
 		start_discs = []
@@ -327,6 +333,52 @@ class NormalSurface:
 				all_relations.append(relation)
 		return all_relations
 
+	def simplified_generators(self, surface_generators = True):
+		"""
+		Finds a simplified set of generators of the fundamental group of the normal surface written in terms of the generators of the fundamental group
+		of the manifold it lies in. These generators are given as numbers that come from the unreduced presentation of the fundamental group
+		of the manifold computed by Snappy.
+		"""
+
+		simpG = self.regina_group()
+		# unsimpG = regina.GroupPresentation(
+		iso = simpG.intelligentSimplify() # from the unsimplified group to the simplified one
+		inv_iso = regina.HomGroupPresentation(iso)
+		inv_iso.invert() # from the simplified group to the unsimplified one
+		gens_list = []
+		for i in range(simpG.countGenerators()):
+			gens_list.append(regina_term_to_Tietze(inv_iso.evaluate(i)))
+		if surface_generators:
+			return gens_list
+		else:
+			return [self.convert_to_word_embedding(gen) for gen in gens_list]
+
+	def regina_group(self):
+		num_gens = len(self.fundamental_group_generators(return_tree=False))
+		relations = self.relations()
+		if num_gens < 27:
+			G = regina.GroupPresentation(num_gens, [Tietze_to_string(rel) for rel in relations])
+		else:
+			G = regina.GroupPresentation(num_gens, [Tietze_to_long_string(rel) for rel in relations])
+		return G
+
+	def convert_to_word_embedding(self, word):
+		"""
+		Given a word in the fundamental group of the surface (represented as a list of numbers, the so-called Tietze list representation,
+		that is, the element aBAC would be represented as [1, -2, -1, -3]), gets the same word as an element of the
+		fundamental group of the surrounding manifold by applying the homomorphism induced from the embedding of the surface
+		into the manifold.
+		"""
+		embedding = self.fundamental_group_embedding()
+		embedded_word = []
+		for elt in word:
+			if elt > 0:
+				embedded_word += embedding[elt - 1]
+			else:
+				embedded_word += [-num for num in embedding[-elt - 1][::-1]]
+		return embedded_word
+
+
 	def sage_group(self, simplified = True):
 		"""
 		Returns a presentation of the fundamental group of this surface as a Sagemath finitely presented group object
@@ -334,7 +386,7 @@ class NormalSurface:
 		coming from the generators and relations returned by fundamental_group_generators and surface_relations.
 		"""
 		generators = self.fundamental_group_generators()
-		relations = self.relations_version_2(True)
+		relations = self.relations(True)
 		F = FreeGroup(len(generators))
 		sage_relations = [F(relation) for relation in relations]
 		G = F/sage_relations
@@ -357,7 +409,7 @@ class NormalSurface:
 
 	# Should not be included in final code
 	def relations_as_holonomy_matrices(self):
-		relations = self.relations_version_2(surface_relations=False)
+		relations = self.relations(surface_relations=False)
 		G = self.manifold.fundamental_group(simplify_presentation=False)
 		for relation in relations:
 			mat = Tietze_to_matrix(relation, G)
@@ -370,7 +422,7 @@ class NormalSurface:
 
 	# Should not be included in final code
 	def get_embedded_relations(self):
-		surface_relations = self.relations_version_2(True)
+		surface_relations = self.relations(True)
 		embedding = self.fundamental_group_embedding()
 		embedded_relations = []
 		for i in range(len(surface_relations)):
@@ -397,7 +449,7 @@ class NormalSurface:
 		Writes the relations for the surface fundamental group in terms of the fundamental group of the manifold
 		"""
 		embedded_relations = self.get_embedded_relations()
-		relations = self.relations_version_2(False)
+		relations = self.relations(False)
 		assert len(relations) == len(embedded_relations)
 		F = FreeGroup(len(self.fundamental_group_generators()))
 		sage_embedded_relations = [F(rel) for rel in embedded_relations]
@@ -447,6 +499,8 @@ class NormalSurface:
 
 		#goal: find simplified_group = []
 		pass
+
+
 
 	def plot_limit_set(self, name=None, simplify_presentation=True, num_points = 10000):
 		"""
@@ -652,10 +706,32 @@ def glue_triangles(DSS, disc, face_gluings, face_list, our_surface):
 
 
 def Tietze_to_string(word):
+	"""
+	From the Tietze list of a word in a group, returns the snappy-like string associated to it. For example, for the
+	word [1,-3,4,2,-1], this returns the string 'aCdbA'
+	Note will not work for more than 26 generators
+	"""
 	alphabet = 'abcdefghijklmnopqrstuvwxyz'
 	our_alphabet = '?' + alphabet + alphabet.upper()[::-1]
 	return ''.join([our_alphabet[index] for index in word])
 
+def Tietze_to_long_string(elt, regina_conventions=True):
+	word = ''
+	if regina_conventions:
+		# Using regina conventions
+		for num in elt:
+			if num > 0:
+				word += 'g' + str(num - 1)
+			else:
+				word += 'g' + str(abs(num) - 1) + '^-1'
+	else:
+		# Using snappy conventions
+		for num in elt:
+			if num > 0:
+				word += 'x' + str(num)
+			else:
+				word += 'X' + str(abs(num))
+	return word
 
 def Tietze_to_matrix(word, G):
 	"""
@@ -664,6 +740,20 @@ def Tietze_to_matrix(word, G):
 	"""
 	return G.SL2C(Tietze_to_string(word))
 
+def regina_term_to_Tietze(elt):
+	"""
+	Given a regina GroupExpression, for example, g0g1^-1 returns the Tietze representation of the term as a list, in this
+	case, [1, -2].
+	"""
+	Tietze = []
+	for term in elt.terms():
+		gen = term.generator
+		exp = term.exponent
+		if exp > 0:
+			Tietze.extend([gen + 1] * exp)
+		else:
+			Tietze.extend([-(gen + 1)] * abs(exp))
+	return Tietze
 
 def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 	"""
@@ -1087,7 +1177,7 @@ def test_new_relations():
 		S = vec_to_NormalSurface(vec, M)
 
 		print('Surface relations')
-		print(S.relations_version_2(True))
+		print(S.relations(True))
 		for rel in S.surface_relations():
 			print(rel)
 		# print('Manifold relations')
