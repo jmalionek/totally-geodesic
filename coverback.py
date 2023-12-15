@@ -1,6 +1,6 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-199
+#SBATCH --array=0-99
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
@@ -9,7 +9,7 @@
 #SBATCH --output=/data/keeling/a/chaeryn2/SLURM_print/left_OCCcover%A_%a
 #SBATCH --error=/data/keeling/a/chaeryn2/SLURM_error/left_OCCcover%A_%a
 
-import os
+import os, sys
 import pickle
 import snappy, regina
 import math
@@ -75,12 +75,19 @@ def detect_totally_geodesic(manifold, index):
         orientable = surface.surface.isOrientable()
         all_real = True
         if orientable:
-            gens = surface.simplified_generators()
+            if 'simplify' in sys.argv:
+                gens = surface.simplified_generators()
+            else:
+                gens = surface.fundamental_group_embedding()
         else:
             vec = S.get_vector()
             double_vec = tuple(2*x for x in vec)
             double_surface = vec_to_NormalSurface(double_vec, M)
-            gens = double_surface.simplified_generators()
+            if 'simplify' in sys.argv:
+                gens = double_surface.simplified_generators()
+            else:
+                gens = double_surface.fundamental_group_embedding()
+
         gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
         comb = list(combinations(list(range(len(gens))), 1)) \
                + list(combinations(list(range(len(gens))), 2)) \
@@ -114,7 +121,10 @@ def detect_totally_geodesic(manifold, index):
               'potential_tot_geo': potential_tot_geo_surfaces}
 
     directory = '/data/keeling/a/chaeryn2/computation_outputs/'
-    filename = f'cover_info_{index[0]}_{index[1]}_{index[2]}_{M.name()}'
+    if 'simplify' in sys.argv:
+        filename = f'cover_info_{index[0]}_{index[1]}_{index[2]}_{M.name()}_simplify'
+    else:
+        filename = f'cover_info_{index[0]}_{index[1]}_{index[2]}_{M.name()}'
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
 
@@ -124,7 +134,7 @@ if __name__ == '__main__':
     census = snappy.OrientableCuspedCensus()
 
     for M_index, M in enumerate(census):
-        if M_index % 200 == task:
+        if M_index % 100 == task:
             vol = M.volume()
             low_bd = math.ceil(3.6 / vol)
             up_bd = math.floor(20 / vol)
