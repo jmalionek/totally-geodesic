@@ -141,12 +141,23 @@ if __name__ == '__main__':
             indices = range(max(low_bd, 2), up_bd + 1)
             for index in indices:
                 for cover_index, cover in enumerate(M.covers(index)):
-                    if f'cover_info_{M_index}_{index}_{cover_index}_' not in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
-                        gc.collect()
-                        p = multiprocessing.Process(target=detect_totally_geodesic,
-                                                    args=(cover, (M_index, index, cover_index)))
-                        p.start()
-                        p.join(5000)
-                        if p.is_alive():
-                            p.terminate()
-                            continue
+                    if 'simplify' in sys.argv:
+                        if f'cover_info_{M_index}_{index}_{cover_index}_{cover.name()}_simplify' not in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
+                            gc.collect()
+                            p = multiprocessing.Process(target=detect_totally_geodesic,
+                                                        args=(cover, (M_index, index, cover_index)))
+                            p.start()
+                            p.join(5000)
+                            if p.is_alive():
+                                p.terminate()
+                                continue
+                    else:
+                        if f'cover_info_{M_index}_{index}_{cover_index}_{cover.name()}' not in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
+                            gc.collect()
+                            p = multiprocessing.Process(target=detect_totally_geodesic,
+                                                        args=(cover, (M_index, index, cover_index)))
+                            p.start()
+                            p.join(5000)
+                            if p.is_alive():
+                                p.terminate()
+                                continue
