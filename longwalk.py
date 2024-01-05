@@ -137,8 +137,9 @@ if __name__ == '__main__':
     for num in long_mfld_list:
         if num > 279648:
             wrong_saved.append(num)
-    with open('taking_too_long_manifolds/wrong_saved.txt', 'w') as f:
-        f.write(wrong_saved)
+    with open('taking_too_long_manifolds/wrong_saved.txt', 'a') as f:
+        for num in wrong_saved:
+            f.write('\n' + str(num) + '\n')
 
     long_mfld_list = [num for num in long_mfld_list if num < 279649]
     mfld_list = []
