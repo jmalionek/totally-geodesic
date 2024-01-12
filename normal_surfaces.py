@@ -545,6 +545,74 @@ class NormalSurface:
 			else:
 				raise TypeError('Name must be a string')
 
+	def plot_finer_limit_set(self, name=None, max_dist = .1):
+		simpG = self.regina_group()
+		iso = simpG.intelligentSimplify()  # from the unsimplified group to the simplified one
+		inv_iso = regina.HomGroupPresentation(iso)
+		inv_iso.invert()  # from the simplified group to the unsimplified one
+		assert len(simpG.relations()) == 1
+		relation = simpG.relations()[0]
+		word = regina_term_to_Tietze(relation)
+		points = [[letter] for letter in word]
+		current_max_dist = float('inf')
+		# the function used to convert a Tietze representation into a string which is digestible by regina
+		if simpG.countGenerators() > 26:
+			Tietze_converter = Tietze_to_long_string
+		else:
+			Tietze_converter = Tietze_to_string
+		snappyG = self.manifold.fundamental_group(simplify_presentation=False)
+		origin = vector(CC, [1, 0])
+		while(current_max_dist < max_dist):
+			current_max_dist = 0
+			max_dist_i = -1
+			for i in range(len(points)):
+				a, b = points[i], points[(i+1) % len(points)]
+				# convert from the Tietze words in the simplified group to a matrix
+				a = Tietze_to_matrix(regina_term_to_Tietze(inv_iso(regina.GroupExpression(Tietze_converter(a)))), snappyG)
+				b = Tietze_to_matrix(regina_term_to_Tietze(inv_iso(regina.GroupExpression(Tietze_converter(b)))), snappyG)
+				pta = a * origin
+				ptb = b * origin
+				pta = pta[0] / pta[1]
+				ptb = ptb[0] / ptb[1]
+				if (pta - ptb).abs() > current_max_dist:
+					max_dist_i = i
+					current_max_dist = (pta - ptb).abs()
+			a, b = points[max_dist_i], points[(max_dist_i+1) % len(points)]
+			length = min(len(a), len(b))
+			for i in range(length):
+				if a[len(a) - i - 1] != b[len(b) - i - 1]:
+					branch_pt_a = len(a) - i - 1
+					branch_pt_b = len(b) - i - 1
+			common_suffix = a[branch_pt_a + 1:]
+			a_branch_letter = a[branch_pt_a]
+			b_branch_letter = b[branch_pt_b]
+			# if b_branch_letter is directly to the right of a_branch_letter in the circular ordering
+			a_branch_index = word.index(a_branch_letter)
+			b_branch_index = word.index(b_branch_letter)
+			# make the point in the middle
+
+			# if when the paths branch, the two branches are adjacent to each other
+			if b_branch_index - a_branch_index in [1, -(len(word) - 1)]:
+				# choose the shorter branch and turn it towards the other branch
+				if len(a) < len(b):
+					middle = word[(a_branch_index + len(word) / 2 + 1) % len(word)] + a_branch_letter + common_suffix
+				else:
+					middle = word[(b_branch_index + len(word) / 2 - 1) % len(word)] + b_branch_letter + common_suffix
+			else:
+				# if the paths branch with something between them, choose the branch in between
+				if a_branch_index < b_branch_index:
+					middle = word[ceil((a_branch_index + b_branch_index) / 2)] + common_suffix
+				else:
+					# we want the middle in the circular orderin which is on the outside of a and b in the list
+					middle = word[ceil((a_branch_index + b_branch_index + len(word)) / 2) % len(word)] + common_suffix
+
+
+
+
+
+
+
+			# calculate current_max_dist
 
 
 class Polygon:
