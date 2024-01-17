@@ -428,18 +428,18 @@ class NormalSurface:
 		for i in range(len(surface_relations)):
 
 			surf_rel = surface_relations[i]
-			print('new relation')
-			print('surf_rel', surf_rel)
-			print('embedding', embedding)
+			# print('new relation')
+			# print('surf_rel', surf_rel)
+			# print('embedding', embedding)
 			embedded_rel = []
 			for elt in surf_rel:
 				if elt > 0:
 					embedded_rel += embedding[elt - 1]
-					print(elt, embedding[elt - 1])
+					# print(elt, embedding[elt - 1])
 				else:
 					embedded_rel += [-num for num in embedding[-elt - 1][::-1]]
-					print(elt, [-num for num in embedding[-elt - 1][::-1]])
-			print('embedded_rel', embedded_rel)
+					# print(elt, [-num for num in embedding[-elt - 1][::-1]])
+			# print('embedded_rel', embedded_rel)
 			embedded_relations.append(embedded_rel)
 		return embedded_relations
 
@@ -547,12 +547,16 @@ class NormalSurface:
 
 	def plot_finer_limit_set(self, name=None, max_dist = .1):
 		simpG = self.regina_group()
+		print(simpG)
 		iso = simpG.intelligentSimplify()  # from the unsimplified group to the simplified one
 		inv_iso = regina.HomGroupPresentation(iso)
 		inv_iso.invert()  # from the simplified group to the unsimplified one
+		print(inv_iso)
+		print(simpG)
 		assert len(simpG.relations()) == 1
 		relation = simpG.relations()[0]
 		word = regina_term_to_Tietze(relation)
+		assert len(word) % 2 == 0
 		points = [[letter] for letter in word]
 		current_max_dist = float('inf')
 		# the function used to convert a Tietze representation into a string which is digestible by regina
@@ -561,25 +565,39 @@ class NormalSurface:
 		else:
 			Tietze_converter = Tietze_to_string
 		snappyG = self.manifold.fundamental_group(simplify_presentation=False)
-		origin = vector(CC, [1, 0])
-		while(current_max_dist < max_dist):
-			current_max_dist = 0
+		origin = vector(CC, [0, 1])
+		while(current_max_dist > max_dist):
+			print('points')
+			print(points)
+			current_max_dist = -1
 			max_dist_i = -1
 			for i in range(len(points)):
-				a, b = points[i], points[(i+1) % len(points)]
+				a_word, b_word = points[i], points[(i+1) % len(points)]
 				# convert from the Tietze words in the simplified group to a matrix
-				a = Tietze_to_matrix(regina_term_to_Tietze(inv_iso(regina.GroupExpression(Tietze_converter(a)))), snappyG)
-				b = Tietze_to_matrix(regina_term_to_Tietze(inv_iso(regina.GroupExpression(Tietze_converter(b)))), snappyG)
+				a = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(a_word))))), snappyG)
+				b = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(b_word))))), snappyG)
+				# print('a, b matrices')
+				# print(a)
+				# print(b)
 				pta = a * origin
 				ptb = b * origin
+				# print('a,b before', pta, ptb)
 				pta = pta[0] / pta[1]
 				ptb = ptb[0] / ptb[1]
+				# print('distance', (pta - ptb).abs())
+				# print('a, b', pta, ptb)
 				if (pta - ptb).abs() > current_max_dist:
 					max_dist_i = i
 					current_max_dist = (pta - ptb).abs()
+					# print('current max updated')
+			print('max_dist_i', max_dist_i)
 			a, b = points[max_dist_i], points[(max_dist_i+1) % len(points)]
 			length = min(len(a), len(b))
+			branch_pt_a = 'silly'
+			branch_pt_b = 'bad'
+			print(a, b)
 			for i in range(length):
+				print(a[len(a) - i - 1], b[len(b) - i - 1])
 				if a[len(a) - i - 1] != b[len(b) - i - 1]:
 					branch_pt_a = len(a) - i - 1
 					branch_pt_b = len(b) - i - 1
@@ -590,29 +608,70 @@ class NormalSurface:
 			a_branch_index = word.index(a_branch_letter)
 			b_branch_index = word.index(b_branch_letter)
 			# make the point in the middle
-
 			# if when the paths branch, the two branches are adjacent to each other
 			if b_branch_index - a_branch_index in [1, -(len(word) - 1)]:
 				# choose the shorter branch and turn it towards the other branch
 				if len(a) < len(b):
-					middle = word[(a_branch_index + len(word) / 2 + 1) % len(word)] + a_branch_letter + common_suffix
+					middle = [word[(a_branch_index + len(word) // 2 + 1) % len(word)], a_branch_letter] + common_suffix
 				else:
-					middle = word[(b_branch_index + len(word) / 2 - 1) % len(word)] + b_branch_letter + common_suffix
+					middle = [word[(b_branch_index + len(word) // 2 - 1) % len(word)], b_branch_letter] + common_suffix
 			else:
 				# if the paths branch with something between them, choose the branch in between
 				if a_branch_index < b_branch_index:
-					middle = word[ceil((a_branch_index + b_branch_index) / 2)] + common_suffix
+					middle = [word[ceil((a_branch_index + b_branch_index) // 2)]] + common_suffix
 				else:
 					# we want the middle in the circular orderin which is on the outside of a and b in the list
-					middle = word[ceil((a_branch_index + b_branch_index + len(word)) / 2) % len(word)] + common_suffix
+					middle = [word[ceil((a_branch_index + b_branch_index + len(word)) / 2) % len(word)]] + common_suffix
+			print('middle')
+			print(middle)
+			points[max_dist_i] = [word[(word.index(a[0]) + len(word) // 2) % len(word)]] + a
+			points[max_dist_i + 1] = [word[(word.index(b[0]) + len(word) // 2) % len(word)]] + b
+			points = points[:max_dist_i + 1] + [middle] + points[max_dist_i + 1:]
 
 
+		fig, ax = plt.subplots()
+		complex_points = []
+		print(points)
+		for point in points:
+			# print(point)
+			# print(Tietze_converter(point))
+			# print(regina.GroupExpression(Tietze_converter(point)))
+			# print(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point))))
+			# print(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point)))))
+			# print(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point)))))
+			# print(snappyG)
 
 
+			mat = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point))))),
+			                     snappyG)
+			projective_point = mat * origin
+			complex_point = projective_point[0] / projective_point[1]
+			complex_points.append(complex_point)
+		points_real = []
+		points_imaginary = []
+		for pt in complex_points:
+			points_real.append((pt[0] / pt[1]).real())
+			points_imaginary.append((pt[0] / pt[1]).imag())
+		ax.plot(points_real, points_imaginary, 'bo')
 
+		if name is None:
+			fig.savefig('limit_set')
+		elif isinstance(name, str):
+			fig.savefig(name)
+		else:
+			raise TypeError('Name must be a string')
 
+		return points, complex_points
 
-			# calculate current_max_dist
+		# TODO: When running the code, we get to a point where we have two branches, a and b.
+		# When we find the middle point, it ends up being a subset of one of a or b.
+		# Then when we extend, we end up getting a or b exactly afterwards. This causes the same point to be added forever
+		# In this process, the two points are getting slightly farther and farther away each time actually (not good)
+
+		# Two fixes:
+		# Add in some randomness?
+		# Try and come up with a deterministic way to stop this from happening
+
 
 
 class Polygon:
@@ -1231,6 +1290,23 @@ def main8():
 	S_vec = (0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0)
 	return get_surface_trace_field(M, S_vec)
 
+def main9():
+	"""
+	Check our new limit set plot function
+	"""
+	vector = (0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,
+	0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,
+	2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0,
+	2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)
+	T = regina.Triangulation3.tightDecoding('1%")"-"(*&"*"+")*\'"(","**/".,+,0"/,-,."0,,,."-*/",*0"+*.*/*0*')
+	M = snappy.Manifold(T)
+	S = vec_to_NormalSurface(vector, M)
+	points, complex_points = S.plot_finer_limit_set('test_limit_set')
+	print(points)
+	print(complex_points)
+
+
 def test_new_relations():
 	# TODO: m412 breaks fundamental_group_embedding
 	M1 = snappy.Manifold('m004')
@@ -1294,7 +1370,7 @@ def surface_group_is_fine():
 
 
 if __name__ == '__main__':
-	surface_group_is_fine()
+	main9()
 
 # TODO: Get rid of print statements
 # TODO: Make limit set plot better
