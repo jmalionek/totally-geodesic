@@ -546,6 +546,8 @@ class NormalSurface:
 				raise TypeError('Name must be a string')
 
 	def plot_finer_limit_set(self, name=None, max_dist = .1):
+		graph = nx.Graph()
+		graph.add_node(tuple())
 		simpG = self.regina_group()
 		print(simpG)
 		iso = simpG.intelligentSimplify()  # from the unsimplified group to the simplified one
@@ -558,6 +560,8 @@ class NormalSurface:
 		word = regina_term_to_Tietze(relation)
 		assert len(word) % 2 == 0
 		points = [[letter] for letter in word]
+		for point in points:
+			graph.add_edge(tuple(), tuple(point))
 		current_max_dist = float('inf')
 		# the function used to convert a Tietze representation into a string which is digestible by regina
 		if simpG.countGenerators() > 26:
@@ -566,44 +570,75 @@ class NormalSurface:
 			Tietze_converter = Tietze_to_string
 		snappyG = self.manifold.fundamental_group(simplify_presentation=False)
 		origin = vector(CC, [0, 1])
-		while(current_max_dist > max_dist):
-			print('points')
-			print(points)
-			current_max_dist = -1
-			max_dist_i = -1
-			for i in range(len(points)):
-				a_word, b_word = points[i], points[(i+1) % len(points)]
-				# convert from the Tietze words in the simplified group to a matrix
-				a = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(a_word))))), snappyG)
-				b = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(b_word))))), snappyG)
-				# print('a, b matrices')
-				# print(a)
-				# print(b)
-				pta = a * origin
-				ptb = b * origin
-				# print('a,b before', pta, ptb)
-				pta = pta[0] / pta[1]
-				ptb = ptb[0] / ptb[1]
-				# print('distance', (pta - ptb).abs())
-				# print('a, b', pta, ptb)
-				if (pta - ptb).abs() > current_max_dist:
-					max_dist_i = i
-					current_max_dist = (pta - ptb).abs()
-					# print('current max updated')
-			print('max_dist_i', max_dist_i)
-			a, b = points[max_dist_i], points[(max_dist_i+1) % len(points)]
+		pairs_to_be_done = []
+		for i, point in enumerate(points):
+			# Here we're setting the assumption that we're taking the cyclic ordering to be the ordering given by
+			# going along the initial word from left to right (i.e. in the word abABcdCD, the ordering goes from a to b
+			# to A to B etc.
+			pairs_to_be_done.append((point, points[(i+1) % len(points)]))
+		while len(pairs_to_be_done) > 0:
+			a_word, b_word = pairs_to_be_done.pop(0)
+			# convert from the Tietze words in the simplified group to a matrix
+			a = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(a_word))))), snappyG)
+			b = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(b_word))))), snappyG)
+			# Apply the matrices on a point
+			pta = a * origin
+			ptb = b * origin
+			# Make the points be complex numbers
+			pta = pta[0] / pta[1]
+			ptb = ptb[0] / ptb[1]
+			# If the points are close enough together we don't need to add points between
+			if (pta - ptb).abs() < max_dist:
+				continue
+			# If the points are too far from each other, we add points between
+
+			# Get the common suffix between the two words
+			# Given a = [1,37,3], b = [5,37,3], the common_suffix_length should be 2
 			length = min(len(a), len(b))
-			branch_pt_a = 'silly'
-			branch_pt_b = 'bad'
-			print(a, b)
+			common_suffix_length = 0
 			for i in range(length):
-				print(a[len(a) - i - 1], b[len(b) - i - 1])
-				if a[len(a) - i - 1] != b[len(b) - i - 1]:
-					branch_pt_a = len(a) - i - 1
-					branch_pt_b = len(b) - i - 1
-			common_suffix = a[branch_pt_a + 1:]
-			a_branch_letter = a[branch_pt_a]
-			b_branch_letter = b[branch_pt_b]
+				if a[-i - 1] != b[-i - 1]:
+					common_suffix_length = i
+					break
+			common_suffix = a[len(a) - common_suffix_length:]
+			a_prefix = a[0 : len(a) - common_suffix_length]
+			b_prefix = b[0 : len(b) - common_suffix_length]
+			if len(a_prefix) == 0 or len(b_prefix == 0):
+				# Cases 3 or 4, they lie on the same "octagon" but don't branch
+				# TODO: Case 3, there is some space between them, but on still on same octagon (Fill in points in between)
+				# Make sure to know which way around the octagon to go
+				# TODO: Case 4, no space between them, very bad (Enter a new octagon)
+				pass
+			else:
+				# Check if they are on the same octagon
+				a_letter = a_prefix[-1]
+				b_letter = b_prefix[-1]
+				a_index = word.index(a_letter)
+				b_index = word.index(b_letter)
+				a_backwards_index = word.index(-a_letter)
+				b_backwards_index = word.index(-b_letter)
+				if (a_backwards_index + 1) % len(word) == b_index or (b_backwards_index + 1) % len(word) == a_index:
+					# The case where we're in the octagon
+					pass
+					# TODO: They are in the octagon but one is not a subset of the other (fill in points in between)
+					# Make sure to know which way around the octagon to go
+					# Not too terrible
+				else:
+					# There is no common octagon
+					# This is the easiest case
+					if a_index < b_index:
+						letters = word[a_index + 1: b_index]
+					else:
+						letters = word[a_index + 1:] + word[:b_index]
+					new_words = []
+					for letter in letters:
+						new_words.append(common_suffix + [letter])
+					pair_words = [a] + new_words + [b]
+					for i in range(len(pair_words) - 1):
+						pairs_to_be_done.append((pair_words[i], pair_words[i + 1]))
+
+
+
 			# if b_branch_letter is directly to the right of a_branch_letter in the circular ordering
 			a_branch_index = word.index(a_branch_letter)
 			b_branch_index = word.index(b_branch_letter)
