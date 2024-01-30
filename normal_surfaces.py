@@ -618,10 +618,11 @@ class NormalSurface:
 				b_backwards_index = word.index(-b_letter)
 				if (a_backwards_index + 1) % len(word) == b_index or (b_backwards_index + 1) % len(word) == a_index:
 					# The case where we're in the octagon
-					pass
-					# TODO: They are in the octagon but one is not a subset of the other (fill in points in between)
-					# Make sure to know which way around the octagon to go
-					# Not too terrible
+					a_prefix_in_octagon = []
+					for letter in a_prefix:
+						pass
+					# they are in the octagon but one is not a subset of the other (fill in points in between)
+
 				else:
 					# There is no common octagon
 					# This is the easiest case
