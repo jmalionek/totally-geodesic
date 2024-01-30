@@ -76,7 +76,7 @@ def detect_totally_geodesic(manifold, index):
         all_real = True
         if orientable:
             if 'simplify' in sys.argv:
-                gens = surface.simplified_generators()
+                gens = surface.simplified_generators(False)
             else:
                 gens = surface.fundamental_group_embedding()
         else:
@@ -84,7 +84,7 @@ def detect_totally_geodesic(manifold, index):
             double_vec = tuple(2*x for x in vec)
             double_surface = vec_to_NormalSurface(double_vec, M)
             if 'simplify' in sys.argv:
-                gens = double_surface.simplified_generators()
+                gens = double_surface.simplified_generators(False)
             else:
                 gens = double_surface.fundamental_group_embedding()
 
