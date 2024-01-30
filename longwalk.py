@@ -75,12 +75,12 @@ def detect_totally_geodesic(manifold, index):
         orientable = surface.surface.isOrientable()
         all_real = True
         if orientable:
-            gens = surface.simplified_generators()
+            gens = surface.simplified_generators(False)
         else:
             vec = S.get_vector()
             double_vec = tuple(2*x for x in vec)
             double_surface = vec_to_NormalSurface(double_vec, M)
-            gens = double_surface.simplified_generators()
+            gens = double_surface.simplified_generators(False)
         gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
         comb = list(combinations(list(range(len(gens))), 1)) \
                + list(combinations(list(range(len(gens))), 2)) \

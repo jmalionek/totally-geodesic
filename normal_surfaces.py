@@ -339,9 +339,8 @@ class NormalSurface:
 		of the manifold it lies in. These generators are given as numbers that come from the unreduced presentation of the fundamental group
 		of the manifold computed by Snappy.
 		"""
-
 		simpG = self.regina_group()
-		# unsimpG = regina.GroupPresentation(
+		# unsimpG = regina.GroupPresentation()
 		iso = simpG.intelligentSimplify() # from the unsimplified group to the simplified one
 		inv_iso = regina.HomGroupPresentation(iso)
 		inv_iso.invert() # from the simplified group to the unsimplified one
@@ -1341,6 +1340,17 @@ def main9():
 	print(points)
 	print(complex_points)
 
+def main10():
+	"""
+	Check simplified_generators
+	"""
+	M = snappy.HTLinkExteriors(alternating=False)[7.2:][120000]  # this was K15n8371(0,0) and had 18 tetrahedra
+	vec = [1, 1, 1, 1, 0, 0, 0]*18
+	S = vec_to_NormalSurface(vec, M)
+	G = M.fundamental_group(simplify_presentation=False)
+	print(G)
+	gens = S.simplified_generators(False)
+	gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
 
 def test_new_relations():
 	# TODO: m412 breaks fundamental_group_embedding
@@ -1405,7 +1415,7 @@ def surface_group_is_fine():
 
 
 if __name__ == '__main__':
-	main9()
+	main10()
 
 # TODO: Get rid of print statements
 # TODO: Make limit set plot better
