@@ -94,15 +94,15 @@ def number_unfinished():
 	return num_total - num_done
 
 def unfinished_list():
-	unfinished = list(range(len(snappy.HTLinkExteriors(alternating=False)[7.2:])))
+	unfinished = set(range(len(snappy.HTLinkExteriors(alternating=False)[7.2:])))
 	for name in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/'):
 		if 'link' in name:
 			index = int(name[26:])
-			unfinished.remove(index)
+			unfinished.discard(index)
 	for name in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
 		if 'link' in name:
 			index = int(name.split('_')[2])
-			unfinished.remove(index)
+			unfinished.discard(index)
 	return unfinished
 
 
