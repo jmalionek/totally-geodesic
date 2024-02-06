@@ -105,6 +105,15 @@ def unfinished_list():
 			unfinished.discard(index)
 	return unfinished
 
+def discard_nonhyperbolic():
+	uf = unfinished_list()
+	hyperbolic = set()
+	HTlinkexterior = list(snappy.HTLinkExteriors(alternating=False)[7.2:])
+	for i in uf:
+		M = HTlinkexterior[i]
+		if M.solution_type(enum=True) == 1 or M.solution_type(enum=True) == 2:
+			hyperbolic.add(i)
+	return hyperbolic
 
 def main():
 
