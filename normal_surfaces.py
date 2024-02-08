@@ -40,22 +40,37 @@ class NormalSurface:
 		return surface_vec
 
 	def add_disc(self, disc):
+		"""
+		Adds the specified disc to this normal surface
+		"""
 		self.polygons_list.append(disc)
 		self.polygons[disc.tetrahedron][disc.disc_type].append(disc)
 
 	def get_polygon(self, tet_number, disc_type, disc_index):
+		"""
+		Gets the specified normal disc from the tetrahedron number, disc type, and the index of the specific disc
+		(this follows regina's normal disc indexing conventions)
+		"""
 		return self.polygons[tet_number][disc_type][disc_index]
 
 	def dual_graph(self):
 		"""
 		Given a NormalSurface object from this package, returns the dual graph as a networkx MultiDiGraph object
 		The vertices correspond to normal discs in the normal surface and are indexed by the id numbers (see Polygon.get_id_numbers for more information)
-		The edges correspond to edges of the normal surface triangulation and are indexed by the faces of the manifold triangulation on which they lie
+		The edges correspond to edges of the normal surface triangulation and are indexed by the face of the tetrahedron
+		the edge passes through as well as the index of the triangle it passes through in the triangulation of the
+		3-manifold
+
+		This additionally chooses a basepoint for the fundamental group of the normal surface and ensures that the basepoint
+		has a directed path from the basepoint to every other normal disc.
 		"""
 		G = nx.MultiDiGraph()
 		DSS = regina.DiscSetSurface(self.surface)
 		T = regina.Triangulation3(self.manifold)
 
+		# Choose a basepoint so that the basepoint of the normal surface lies in the same tetrahedron as the basepoint
+		# Snappy has chosen for the manifold (if possible).
+		# If there are no discs inside this tetrahedron just choose the first normal disc in the list of discs of the normal surface.
 		self.manifold._choose_generators(False, False)
 		gen_info = self.manifold._choose_generators_info()
 		basepoint_tet = -1
@@ -71,6 +86,8 @@ class NormalSurface:
 					break
 			self.basepoint = basepoint_disc
 
+		# Use a breadth first search starting from the basepoint disc to construct the graph by filling in normal discs
+		# step-by-step until all the edges between normal discs have been added
 		for polygon in self.polygons_list:
 			G.add_node(polygon.get_id_numbers())
 		finished_nodes = []
@@ -108,7 +125,7 @@ class NormalSurface:
 		"""
 		Retrieves the edges that lie outside a maximal tree of the dual graph of the normal surface.
 		These edges correspond to a set of generators of the fundamental group of the normal surface.
-		This function optionally returns the maximal tree also if return_tree is True.
+		This function optionally returns the maximal tree if return_tree is True.
 		"""
 		if self.edges is None:
 			digraph = self.dual_graph()
@@ -133,26 +150,14 @@ class NormalSurface:
 		"""
 		self.manifold._choose_generators(False, False)
 		gen_info = self.manifold._choose_generators_info()
-		# choose normal disc that will be used as the basepoint of the fundamental group of the normal surface
-		# try to choose normal disc inside basepoint tetrahedron of manifold, if there are no discs inside this tetrahedron
-		# just choose first normal disc in list of discs of normal surface
 
-
-		verbose = False
-		if verbose:
-			print('basepoint')
-			print(self.basepoint)
-
-		cycles = []
-		node_paths = []
 		generators, tree = self.fundamental_group_generators(True)
-		# add paths from/to basepoint to given edge (generator corresponds to a single edge outside the tree) and creates a loop in the fundamental group
+		# Add paths from/to the basepoint to the given edge (note that every generator corresponds to a single edge outside the tree)
+		# and creates a loop in the fundamental group corresponding to that edge
 		gens_in_M = []
 		for edge in generators:
 
-			if verbose:
-				print(edge)
-
+			# Create the path from the basepoint to the tail of the given edge
 			path_to_tail = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[0])
 			path_to_head = nx.shortest_path(tree, self.basepoint.get_id_numbers(), edge[1])
 			gen_path = []
@@ -165,10 +170,12 @@ class NormalSurface:
 				if gen != 0:
 					gen_path.append(gen)
 
+			# Add the given edge
 			edge_gen = gen_info[edge[0][0]]['generators'][edge[2][0]]
 			if edge_gen != 0:
 				gen_path.append(edge_gen)
 
+			# Add the path back to the basepoint from the head of the given edge
 			gen_path_to_tail = []
 			for i, tail in enumerate(path_to_head[:-1]):
 				head = path_to_head[i + 1]
@@ -180,18 +187,17 @@ class NormalSurface:
 					gen_path_to_tail.append(gen)
 			gen_path = gen_path + gen_path_to_tail[::-1]
 
-			if verbose:
-				print('edge_path_to_generator')
-				print(gen_path)
 			gens_in_M.append(gen_path)
 		return gens_in_M
 
 
 	def intersecting_edges(self, normal_disc, return_vertex_pairs=False):
 		"""
-		Given a normal disc (Polygon object) returns the list of the indices of the edges inside the snappy triangulation that the normal disc intersects.
+		Given a normal disc (Polygon object) returns the list of the indices of the edges inside the Snappy triangulation that the normal disc intersects.
+		Note that the indices for the edges in the regina and Snappy triangulations do NOT match.
 		If return_vertex_pairs is set to True then it returns the edge on the tetrahedron as a list of pairs of vertices (0, 1, 2, 3) that are
 		its endpoints.
+		Note further that the vertex pairs of the edges in Snappy and regina DO match up.
 		"""
 		Tr = self.surface.triangulation()
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
@@ -213,13 +219,20 @@ class NormalSurface:
 			return edge_list
 		edge_indices = []
 		for e in edge_list:
-			# TODO: SOURCE OF SKETCHINESS. BELOW IS ONLY FOR REGINA. FIX TO RETURN SNAPPY STUFF?
+			# We've designed this code so that it returns the indices of the edges that Snappy uses.
+			# However, we have included the corresponding line for the regina edge indices as a comment below.
 			# edge_indices.append(Tr.tetrahedron(tet_num).edge(*e).index()) # REGINA ONLY
-			# Below should work for snappy now
 			edge_indices.append(T.Tetrahedra[tet_num].Class[snappy.snap.t3mlite.bitmap(e)].Index)
 		return edge_indices
 
 	def relations(self, surface_relations = True):
+		"""
+		Returns the relations of the presentation of the fundamental group of this surface.
+		If surface_relations is True, this returns the relations in terms of the generators of the surface corresponding
+		to the edges outside the dual spanning tree.
+		If surface_relations is False, this returns the relations written in terms of the generators of the fundamental
+		group of the surrounding snappy manifold.
+		"""
 		all_relations = []  # list of all relations that will be returned
 
 		start_discs = []
@@ -239,31 +252,30 @@ class NormalSurface:
 		swap_both = regina.Perm4(1, 0, 3, 2)  # switches first two digits and last two digits of a permutation when multiplied on the right,
 											  # e.g. swaps (1, 3, 2, 0) to (3, 1, 0, 2)
 
-		# Goes from an edge in the triangulation to pairs (disc, disc corner) (and by disc corner we mean the corner on
-		# the disc). The disc corner is recorded as the unique edge of the tetrahedron (given as a pair of endpoints)
-		# which, touches that specific corner.
-
+		# edge_disc_list is a list of lists which maps an edge index in the triangulation to pairs (disc, disc corner)
+		# (and by disc corner we mean the corner on the disc). The disc corner is recorded as the unique edge of the
+		# tetrahedron (given as a pair of endpoints) which touches that specific corner.
 		# From these endpoints (and information about the normal disc), we can get the arcs on the normal disc which
 		# would be glued across as you go along getting the relation.
 		edge_disc_list = [[] for i in range(num_edges)]
 
 		for disc in self.polygons_list:
 			tet = disc.tetrahedron
-			disc_type = disc.disc_type
 			edge_pairs = self.intersecting_edges(disc, return_vertex_pairs=True)
 			edge_indices = [Tr.tetrahedron(tet).edge(*edge).index() for edge in edge_pairs]
 			for i, edge_index in enumerate(edge_indices):
 				edge_disc_list[edge_index].append((disc, set(edge_pairs[i])))
 
+		# Find the relations
 		for edge in range(num_edges):
 			edge_valence = Tr.edge(edge).degree()
 			disc_list = edge_disc_list[edge]
 			while len(disc_list) > 0:
-				# disc, corner = disc_list.pop(0)
 				disc, corner = disc_list[0]
 				start_discs.append(disc)
-				# find the two arcs on normal disc that intersect the given edge, start_arc will be the one where we find the next disc
-				# at the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
+				# Find the two arcs on normal disc that intersect the given edge of the triangulation,
+				# start_arc will be the one where we find the next disc.
+				# At the end of finding a cycle of discs we check whether the last disc glues back to the end_arc
 				start_arc = None
 				end_arc = None
 				if disc.is_triangle():
@@ -292,7 +304,6 @@ class NormalSurface:
 					if surface_relations:
 						# get relations in terms of the fundamental group of the surface
 						regina_tet = Tr.tetrahedron(next_disc.tetIndex)
-						regina_face = regina_tet.triangle(next_arc[3])
 						gen = self.surface_generator_of_edge(current_disc, next_our_disc, (current_arc[3], next_arc[3]))
 						if gen != 0:
 							relation.append(gen)
@@ -313,6 +324,8 @@ class NormalSurface:
 				assert current_disc == disc  # make sure we come back to the disc, arc that we started with
 				assert current_arc == start_arc
 
+		# If we are getting the relations in terms of the generators of the fundamental group of the manifold,
+		# we need to add a path from/to the basepoint of the manifold to/from the disc where we start the relation.
 		if not surface_relations:
 			all_unbased_relations = all_relations
 			all_relations = []
@@ -333,6 +346,7 @@ class NormalSurface:
 				all_relations.append(relation)
 		return all_relations
 
+	# TODO: Start commenting from here
 	def simplified_generators(self, surface_generators = True):
 		"""
 		Finds a simplified set of generators of the fundamental group of the normal surface written in terms of the generators of the fundamental group
