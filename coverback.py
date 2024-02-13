@@ -80,7 +80,7 @@ def detect_totally_geodesic(manifold, index):
             else:
                 gens = surface.fundamental_group_embedding()
         else:
-            vec = S.get_vector()
+            vec = surface.get_vector()
             double_vec = tuple(2*x for x in vec)
             double_surface = vec_to_NormalSurface(double_vec, M)
             if 'simplify' in sys.argv:
