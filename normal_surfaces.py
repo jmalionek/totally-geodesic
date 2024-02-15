@@ -14,6 +14,23 @@ from itertools import combinations
 class NormalSurface:
 	"""
 	A class used to contain information and do computations for a normal surface
+
+	Constructs the boundary torus of the exterior of the figure 8 knot as a NormalSurface
+	>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+
+	Looks at its fundamental group
+	>>> S.sage_group()
+	Finitely presented group < x0, x3 | x3^-1*x0*x3*x0^-1 >
+
+	list of functions to have doctests
+		get_vector
+		dual_graph (some features)
+		fundamental_group_generators
+		fundamental_group_embedding
+		relations
+		simplified_generators
+		regina_group
+		sage_group
 	"""
 	def __init__(self, surface, manifold):
 		"""
@@ -496,6 +513,7 @@ class NormalSurface:
 				return 0
 		raise RuntimeError("An edge was given which was not in the surface")
 
+	# Probably remove this since we have other features that do similar things
 	def simplify_representation(self):
 		'''
 		TO-DO(?): write a method to simplify representation of surface given its generators and relations
@@ -512,8 +530,6 @@ class NormalSurface:
 
 		#goal: find simplified_group = []
 		pass
-
-
 
 	def plot_limit_set(self, name=None, simplify_presentation=True, num_points = 10000):
 		"""
@@ -558,6 +574,7 @@ class NormalSurface:
 			else:
 				raise TypeError('Name must be a string')
 
+	# Not doable as a small side project, will be a project on its own in the future (maybe?)
 	def plot_finer_limit_set(self, name=None, max_dist = .1):
 		graph = nx.Graph()
 		graph.add_node(tuple())
