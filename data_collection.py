@@ -217,6 +217,7 @@ def main():
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(times_tg)), size=5000)
 	ax.scatter(times_enum[indices], times_tg[indices], s = 5, alpha = .2)
+	ax.set_aspect('equal')
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
 	ax.set_ylabel('Runtime of Algorithm 2 in seconds')
 	fig.savefig(dir + 'runtime_enumvstg_scatter.png')
@@ -224,3 +225,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+	# downloading files from keeling: scp chaeryn2@keeling.earth.illinois.edu:/path_to_file /path_to_file_on_your_laptop
