@@ -133,28 +133,30 @@ def sort_file_names():
 
 	dirname = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
 	for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/'):
-		# print('tg_computation_outputs/', file)
-		with open('/data/keeling/a/chaeryn2/tg_computation_outputs/' + file, 'rb') as f:
-			data = pickle.load(f)
-		index = int(file.split('_')[3][4:])
+		if 'link' in file:
+			# print('tg_computation_outputs/', file)
+			with open('/data/keeling/a/chaeryn2/tg_computation_outputs/' + file, 'rb') as f:
+				data = pickle.load(f)
+			index = int(file.split('_')[3][4:])
 
-		MR = regina.Triangulation3.tightDecoding(data['manifold'])
-		N = snappy.Manifold(MR)
-		M = htlinkexterior[index]
+			MR = regina.Triangulation3.tightDecoding(data['manifold'])
+			N = snappy.Manifold(MR)
+			M = htlinkexterior[index]
 
-		filename = f'link_info_{index}_{M.name()}'
+			filename = f'link_info_{index}_{M.name()}'
 
-		with open(dirname + filename, 'wb') as f:
-			pickle.dump(data, f)
-		# print('changed to', filename)
+			with open(dirname + filename, 'wb') as f:
+				pickle.dump(data, f)
+			# print('changed to', filename)
 
 	for file in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
-		# print('computation_outputs/', file)
-		manifold_name = file.split('_')[-1]
-		true_index = htlinkexterior_names.index(manifold_name)
-		true_name = f'link_info_{true_index}_{manifold_name}'
-		shutil.copy('/data/keeling/a/chaeryn2/computation_outputs/' + file, dirname + true_name)
-		# print('changed to', true_name)
+		if 'link' in file:
+			# print('computation_outputs/', file)
+			manifold_name = file.split('_')[-1]
+			true_index = htlinkexterior_names.index(manifold_name)
+			true_name = f'link_info_{true_index}_{manifold_name}'
+			shutil.copy('/data/keeling/a/chaeryn2/computation_outputs/' + file, dirname + true_name)
+			# print('changed to', true_name)
 
 def main():
 
