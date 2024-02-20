@@ -123,7 +123,7 @@ def sort_file_names():
 	dirname = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
 	for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/'):
 		print('tg_computation_outputs/', file)
-		with open(file, 'rb') as f:
+		with open('/data/keeling/a/chaeryn2/tg_computation_outputs/' + file, 'rb') as f:
 			data = pickle.load(f)
 		index = file.split('_')[3][4:]
 
