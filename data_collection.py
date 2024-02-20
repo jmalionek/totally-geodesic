@@ -125,7 +125,7 @@ def sort_file_names():
 		print('tg_computation_outputs/', file)
 		with open('/data/keeling/a/chaeryn2/tg_computation_outputs/' + file, 'rb') as f:
 			data = pickle.load(f)
-		index = file.split('_')[3][4:]
+		index = int(file.split('_')[3][4:])
 
 		MR = regina.Triangulation3.tightDecoding(data['manifold'])
 		N = snappy.Manifold(MR)
