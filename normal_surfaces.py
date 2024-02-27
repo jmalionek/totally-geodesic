@@ -22,8 +22,16 @@ class NormalSurface:
 	>>> S.sage_group()
 	Finitely presented group < x0, x3 | x3^-1*x0*x3*x0^-1 >
 
+	Displays the vector corresponding to the surface
+	>>> S.get_vector()
+	(1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0)
+
+	Constructs the dual graph of the surface
+	>>> G = S.dual_graph()
+
+
 	list of functions to have doctests
-		get_vector
+		get_vector *
 		dual_graph (some features)
 		fundamental_group_generators
 		fundamental_group_embedding

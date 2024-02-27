@@ -5,8 +5,8 @@
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/SLURM_print/data_collection%A_%a
-#SBATCH --error=/data/keeling/a/chaeryn2/SLURM_error/data_collection%A_%a
+#SBATCH --output=/data/keeling/a/chaeryn2/SLURM_print/data_collection%A
+#SBATCH --error=/data/keeling/a/chaeryn2/SLURM_error/data_collection%A
 
 
 import os
@@ -158,6 +158,32 @@ def sort_file_names():
 			shutil.copy('/data/keeling/a/chaeryn2/computation_outputs/' + file, dirname + true_name)
 			# print('changed to', true_name)
 
+def sort_file_names_check_done():
+	htlinkexterior = list(snappy.HTLinkExteriors(alternating=False)[7.2:])
+	htlinkexterior_names = [M.name() for M in htlinkexterior]
+
+	dirname = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
+	for file in os.listdir('/data/keeling/a/chaeryn2/tg_computation_outputs/'):
+		if 'link' in file:
+			print(file)
+			index = int(file.split('_')[3][4:])
+			M = htlinkexterior[index]
+			filename = f'link_info_{index}_{M.name()}'
+
+			if filename not in os.listdir('/data/keeling/a/chaeryn2/results_links_names_fixed/'):
+				print('changed to ', filename)
+				shutil.copy('/data/keeling/a/chaeryn2/tg_computation_outputs/' + file, dirname + filename)
+
+	for file in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
+		if 'link' in file:
+			print(file)
+			manifold_name = file.split('_')[-1]
+			true_index = htlinkexterior_names.index(manifold_name)
+			true_name = f'link_info_{true_index}_{manifold_name}'
+			if true_name not in os.listdir('/data/keeling/a/chaeryn2/results_links_names_fixed/'):
+				print('changed to ', true_name)
+				shutil.copy('/data/keeling/a/chaeryn2/computation_outputs/' + file, dirname + true_name)
+
 def main():
 
 	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
@@ -267,5 +293,5 @@ def main():
 
 
 if __name__ == '__main__':
-	sort_file_names()
+	sort_file_names_check_done()
 	# downloading files from keeling: scp chaeryn2@keeling.earth.illinois.edu:/path_to_file /path_to_file_on_your_laptop
