@@ -15,59 +15,30 @@ class NormalSurface:
 	"""
 	A class used to contain information and do computations for a normal surface
 
-	Constructs the boundary torus of the exterior of the figure 8 knot as a NormalSurface
+	Construct the boundary torus of the exterior of the figure 8 knot as a NormalSurface
 	>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
 
-	Looks at its fundamental group
+	The fundamental group of S
 	>>> S.sage_group()
 	Finitely presented group < x0, x3 | x3^-1*x0*x3*x0^-1 >
 
-	Displays the vector corresponding to the surface
+	The vector corresponding to S
 	>>> S.get_vector()
 	(1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0)
 
-	Constructs the dual graph of the surface
-	>>> G = S.dual_graph()
-	>>> list(G.nodes())
-	[(0, 0, 0),
-	 (0, 1, 0),
-	 (0, 2, 0),
-	 (0, 3, 0),
-	 (1, 0, 0),
-	 (1, 1, 0),
-	 (1, 2, 0),
-	 (1, 3, 0)]
-	>>> list(G.edges(keys=True))
-	[((0, 0, 0), (1, 2, 0), (3, 0)),
-	 ((0, 1, 0), (1, 1, 0), (0, 3)),
-	 ((0, 3, 0), (1, 3, 0), (2, 1)),
-	 ((1, 0, 0), (0, 2, 0), (3, 2)),
-	 ((1, 0, 0), (0, 1, 0), (1, 0)),
-	 ((1, 0, 0), (0, 1, 0), (2, 1)),
-	 ((1, 1, 0), (0, 0, 0), (2, 1)),
-	 ((1, 1, 0), (0, 0, 0), (3, 2)),
-	 ((1, 2, 0), (0, 3, 0), (3, 2)),
-	 ((1, 2, 0), (0, 3, 0), (0, 3)),
-	 ((1, 3, 0), (0, 2, 0), (0, 3)),
-	 ((1, 3, 0), (0, 2, 0), (1, 0))]
-
-	 Finds the edges that correspond to the generators of the fundamental group
-	 >>> S.fundamental_group_generators()
-	 [((1, 0, 0), (0, 1, 0), (2, 1)),
-	 ((1, 1, 0), (0, 0, 0), (3, 2)),
-	 ((1, 2, 0), (0, 3, 0), (0, 3)),
-	 ((1, 3, 0), (0, 2, 0), (0, 3)),
-	 ((1, 3, 0), (0, 2, 0), (1, 0))]
-
+	TODO: 2/26 add doctests for the following (without a star) and continue with documentation (line 412)
 	list of functions to have doctests
 		get_vector *
 		dual_graph (some features) *
 		fundamental_group_generators *
-		fundamental_group_embedding
-		relations
+		fundamental_group_embedding *
+		relations *(kind of)
 		simplified_generators
 		regina_group
 		sage_group
+
+	** for relations also try writing a doctest that takes the generators and relations of our familiar surface and simplify its fundamental group
+	using sage to check that it is Z+Z
 	"""
 	def __init__(self, surface, manifold):
 		"""
@@ -117,6 +88,18 @@ class NormalSurface:
 
 		This additionally chooses a basepoint for the fundamental group of the normal surface and ensures that the basepoint
 		has a directed path from the basepoint to every other normal disc.
+
+		Construct the dual graph of the boundary torus of the exterior of the figure 8 knot
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> G = S.dual_graph()
+		>>> G.nodes()
+		NodeView(((0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0), (1, 0, 0), (1, 1, 0), (1, 2, 0), (1, 3, 0)))
+		>>> G.edges(keys=True)
+		OutMultiEdgeView([((0, 0, 0), (1, 2, 0), (3, 0)), ((0, 1, 0), (1, 1, 0), (0, 3)), ((0, 3, 0), (1, 3, 0), (2, 1)), ((1, 0, 0), (0, 2, 0), (3, 2)), ((1, 0, 0), (0, 1, 0), (1, 0)), ((1, 0, 0), (0, 1, 0), (2, 1)), ((1, 1, 0), (0, 0, 0), (2, 1)), ((1, 1, 0), (0, 0, 0), (3, 2)), ((1, 2, 0), (0, 3, 0), (3, 2)), ((1, 2, 0), (0, 3, 0), (0, 3)), ((1, 3, 0), (0, 2, 0), (0, 3)), ((1, 3, 0), (0, 2, 0), (1, 0))])
+
+		Shortest path from the basepoint to (0, 3, 0)
+		>>> nx.shortest_path(G, (1, 0 ,0), (0, 3, 0))
+		[(1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 0), (1, 2, 0), (0, 3, 0)]
 		"""
 		G = nx.MultiDiGraph()
 		DSS = regina.DiscSetSurface(self.surface)
@@ -181,9 +164,13 @@ class NormalSurface:
 		These edges correspond to a set of generators of the fundamental group of the normal surface.
 		This function optionally returns the maximal tree if return_tree is True.
 
-		Check to see if edges corresponding to generators and the maximal tree make up the entire dual graph
+		Generators of the boundary torus of the exterior of the figure 8 knot
 		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
 		>>> G = S.dual_graph()
+		>>> S.fundamental_group_generators()
+		[((1, 0, 0), (0, 1, 0), (2, 1)), ((1, 1, 0), (0, 0, 0), (3, 2)), ((1, 2, 0), (0, 3, 0), (0, 3)), ((1, 3, 0), (0, 2, 0), (0, 3)), ((1, 3, 0), (0, 2, 0), (1, 0))]
+
+		The edges corresponding to the generators and the maximal tree make up the entire dual graph
 		>>> generators, T = S.fundamental_group_generators(return_tree=True)
 		>>> all_edges = set(G.edges(keys=True))
 		>>> all_edges == set(generators).union(set(T.edges(keys=True)))
@@ -209,6 +196,11 @@ class NormalSurface:
 		Finds a set of generators of the fundamental group of the normal surface written in terms of the generators of the fundamental group
 		of the manifold it lies in. These generators are given as numbers that come from the unreduced presentation of the fundamental group
 		of the manifold computed by Snappy.
+
+		Generators of the boundary torus of the exterior of the figure 8 knot written in terms of the generators of the manifold
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> S.fundamental_group_embedding()
+		[[2, -1], [1, 3, -2, -1], [1, 2, -1, -3, 1, -2, -1], [1, 2, -1, 3, -2, -3], [1, 2, -1, 3, -2, 1, -3]]
 		"""
 		self.manifold._choose_generators(False, False)
 		gen_info = self.manifold._choose_generators_info()
@@ -294,6 +286,15 @@ class NormalSurface:
 		to the edges outside the dual spanning tree.
 		If surface_relations is False, this returns the relations written in terms of the generators of the fundamental
 		group of the surrounding snappy manifold.
+
+		Relations of the boundary torus of the exterior of the figure 8 knot
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> S.relations()
+		[[-3, -2], [-1, -5, 4], [1, 2], [-4, 3, 5]]
+
+		Relations written in terms of the generators of the manifold
+		>>> S.relations(surface_relations=False)
+		[[1, 2, -1, 3, 1, -3, 2, -2, -1], [1, -2, 3, -1, -3, 1, -1], [1, 2, -2, -1, 2, 3, -2, -1], [3, 2, -3, -2, 1, -3]]
 		"""
 		all_relations = []  # list of all relations that will be returned
 
