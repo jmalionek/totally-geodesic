@@ -28,12 +28,41 @@ class NormalSurface:
 
 	Constructs the dual graph of the surface
 	>>> G = S.dual_graph()
+	>>> list(G.nodes())
+	[(0, 0, 0),
+	 (0, 1, 0),
+	 (0, 2, 0),
+	 (0, 3, 0),
+	 (1, 0, 0),
+	 (1, 1, 0),
+	 (1, 2, 0),
+	 (1, 3, 0)]
+	>>> list(G.edges(keys=True))
+	[((0, 0, 0), (1, 2, 0), (3, 0)),
+	 ((0, 1, 0), (1, 1, 0), (0, 3)),
+	 ((0, 3, 0), (1, 3, 0), (2, 1)),
+	 ((1, 0, 0), (0, 2, 0), (3, 2)),
+	 ((1, 0, 0), (0, 1, 0), (1, 0)),
+	 ((1, 0, 0), (0, 1, 0), (2, 1)),
+	 ((1, 1, 0), (0, 0, 0), (2, 1)),
+	 ((1, 1, 0), (0, 0, 0), (3, 2)),
+	 ((1, 2, 0), (0, 3, 0), (3, 2)),
+	 ((1, 2, 0), (0, 3, 0), (0, 3)),
+	 ((1, 3, 0), (0, 2, 0), (0, 3)),
+	 ((1, 3, 0), (0, 2, 0), (1, 0))]
 
+	 Finds the edges that correspond to the generators of the fundamental group
+	 >>> S.fundamental_group_generators()
+	 [((1, 0, 0), (0, 1, 0), (2, 1)),
+	 ((1, 1, 0), (0, 0, 0), (3, 2)),
+	 ((1, 2, 0), (0, 3, 0), (0, 3)),
+	 ((1, 3, 0), (0, 2, 0), (0, 3)),
+	 ((1, 3, 0), (0, 2, 0), (1, 0))]
 
 	list of functions to have doctests
 		get_vector *
-		dual_graph (some features)
-		fundamental_group_generators
+		dual_graph (some features) *
+		fundamental_group_generators *
 		fundamental_group_embedding
 		relations
 		simplified_generators
@@ -151,6 +180,14 @@ class NormalSurface:
 		Retrieves the edges that lie outside a maximal tree of the dual graph of the normal surface.
 		These edges correspond to a set of generators of the fundamental group of the normal surface.
 		This function optionally returns the maximal tree if return_tree is True.
+
+		Check to see if edges corresponding to generators and the maximal tree make up the entire dual graph
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> G = S.dual_graph()
+		>>> generators, T = S.fundamental_group_generators(return_tree=True)
+		>>> all_edges = set(G.edges(keys=True))
+		>>> all_edges == set(generators).union(set(T.edges(keys=True)))
+		True
 		"""
 		if self.edges is None:
 			digraph = self.dual_graph()

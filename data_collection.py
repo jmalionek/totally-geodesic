@@ -159,7 +159,7 @@ def sort_file_names():
 			# print('changed to', true_name)
 
 def sort_file_names_check_done():
-	htlinkexterior = list(snappy.HTLinkExteriors(alternating=False)[7.2:])
+	htlinkexterior = snappy.HTLinkExteriors(alternating=False)[7.2:]
 	htlinkexterior_names = [M.name() for M in htlinkexterior]
 
 	dirname = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
