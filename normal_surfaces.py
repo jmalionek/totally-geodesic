@@ -32,17 +32,15 @@ class NormalSurface:
 		dual_graph (some features) *
 		fundamental_group_generators *
 		fundamental_group_embedding *
-		relations *(kind of)
-		simplified_generators
-		regina_group
-		sage_group
+		relations *
+		simplified_generators *
+		regina_group *
+		sage_group *
 
-	** for relations also try writing a doctest that takes the generators and relations of our familiar surface and simplify its fundamental group
-	using sage to check that it is Z+Z
 	"""
 	def __init__(self, surface, manifold):
 		"""
-		Creates a normal surfaces from a regina normal surface and snappy manifold
+		Creates a normal surface from a Regina normal surface and Snappy manifold
 		"""
 		self.polygons_list = []
 		# A list of lists of lists, where the innermost list contains all of the discs which are
@@ -74,7 +72,7 @@ class NormalSurface:
 	def get_polygon(self, tet_number, disc_type, disc_index):
 		"""
 		Gets the specified normal disc from the tetrahedron number, disc type, and the index of the specific disc
-		(this follows regina's normal disc indexing conventions)
+		(this follows Regina's normal disc indexing conventions)
 		"""
 		return self.polygons[tet_number][disc_type][disc_index]
 
@@ -248,10 +246,10 @@ class NormalSurface:
 	def intersecting_edges(self, normal_disc, return_vertex_pairs=False):
 		"""
 		Given a normal disc (Polygon object) returns the list of the indices of the edges inside the Snappy triangulation that the normal disc intersects.
-		Note that the indices for the edges in the regina and Snappy triangulations do NOT match.
+		Note that the indices for the edges in the Regina and Snappy triangulations do NOT match.
 		If return_vertex_pairs is set to True then it returns the edge on the tetrahedron as a list of pairs of vertices (0, 1, 2, 3) that are
 		its endpoints.
-		Note further that the vertex pairs of the edges in Snappy and regina DO match up.
+		Note further that the vertex pairs of the edges in Snappy and Regina DO match up.
 		"""
 		Tr = self.surface.triangulation()
 		T = snappy.snap.t3mlite.Mcomplex(self.manifold)
@@ -274,7 +272,7 @@ class NormalSurface:
 		edge_indices = []
 		for e in edge_list:
 			# We've designed this code so that it returns the indices of the edges that Snappy uses.
-			# However, we have included the corresponding line for the regina edge indices as a comment below.
+			# However, we have included the corresponding line for the Regina edge indices as a comment below.
 			# edge_indices.append(Tr.tetrahedron(tet_num).edge(*e).index()) # REGINA ONLY
 			edge_indices.append(T.Tetrahedra[tet_num].Class[snappy.snap.t3mlite.bitmap(e)].Index)
 		return edge_indices
@@ -285,7 +283,7 @@ class NormalSurface:
 		If surface_relations is True, this returns the relations in terms of the generators of the surface corresponding
 		to the edges outside the dual spanning tree.
 		If surface_relations is False, this returns the relations written in terms of the generators of the fundamental
-		group of the surrounding snappy manifold.
+		group of the surrounding Snappy manifold.
 
 		Relations of the boundary torus of the exterior of the figure 8 knot
 		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
@@ -295,6 +293,12 @@ class NormalSurface:
 		Relations written in terms of the generators of the manifold
 		>>> S.relations(surface_relations=False)
 		[[1, 2, -1, 3, 1, -3, 2, -2, -1], [1, -2, 3, -1, -3, 1, -1], [1, 2, -2, -1, 2, 3, -2, -1], [3, 2, -3, -2, 1, -3]]
+
+		The abelianization of the fundamental group of this surface
+		>>> FG = FreeGroup(len(S.fundamental_group_generators()))
+		>>> G = FG / [FG(rel) for rel in S.relations()]
+		>>> G.abelian_invariants()
+		(0, 0)
 		"""
 		all_relations = []  # list of all relations that will be returned
 
@@ -361,7 +365,7 @@ class NormalSurface:
 				relation = []
 				for i in range(edge_valence):
 					next_disc, next_arc = DSS.adjacentDisc(regina.DiscSpec(*current_disc.get_id_numbers()), current_arc)
-					next_our_disc = self.polygons[next_disc.tetIndex][next_disc.type][next_disc.number]  # our Polygon class instead of a regina one
+					next_our_disc = self.polygons[next_disc.tetIndex][next_disc.type][next_disc.number]  # our Polygon class instead of a Regina one
 					next_corner = {next_arc[0], next_arc[1]}
 
 					if surface_relations:
@@ -409,18 +413,25 @@ class NormalSurface:
 				all_relations.append(relation)
 		return all_relations
 
-	# TODO: Start commenting from here
 	def simplified_generators(self, surface_generators = True):
 		"""
 		Finds a simplified set of generators of the fundamental group of the normal surface written in terms of the generators of the fundamental group
 		of the manifold it lies in. These generators are given as numbers that come from the unreduced presentation of the fundamental group
 		of the manifold computed by Snappy.
+
+		Simplified version of the generators of the fundamental group of boundary torus of the exterior of the figure 8 knot
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> S.simplified_generators()
+		[[4], [5]]
+
+		Generators above written as a loop in terms of the fundamental group of the manifold
+		>>> S.simplified_generators(surface_generators=False)
+		[[1, 2, -1, 3, -2, -3], [1, 2, -1, 3, -2, 1, -3]]
 		"""
 		simpG = self.regina_group()
-		# unsimpG = regina.GroupPresentation()
-		iso = simpG.intelligentSimplify() # from the unsimplified group to the simplified one
+		iso = simpG.intelligentSimplify()  # from the unsimplified group to the simplified one
 		inv_iso = regina.HomGroupPresentation(iso)
-		inv_iso.invert() # from the simplified group to the unsimplified one
+		inv_iso.invert()  # from the simplified group to the unsimplified one
 		gens_list = []
 		for i in range(simpG.countGenerators()):
 			gens_list.append(regina_term_to_Tietze(inv_iso.evaluate(i)))
@@ -430,6 +441,14 @@ class NormalSurface:
 			return [self.convert_to_word_embedding(gen) for gen in gens_list]
 
 	def regina_group(self):
+		"""
+		Returns the fundamental group of this surface as a Regina GroupPresentation object.
+
+		The fundamental group of boundary torus of the exterior of the figure 8 knot as a Regina GroupPresentation object
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> S.regina_group()
+		<regina.GroupPresentation: < a b c d e | c^-1 b^-1, a^-1 e^-1 d, a b, d^-1 c e >>
+		"""
 		num_gens = len(self.fundamental_group_generators(return_tree=False))
 		relations = self.relations()
 		if num_gens < 27:
@@ -440,10 +459,10 @@ class NormalSurface:
 
 	def convert_to_word_embedding(self, word):
 		"""
-		Given a word in the fundamental group of the surface (represented as a list of numbers, the so-called Tietze list representation,
-		that is, the element aBAC would be represented as [1, -2, -1, -3]), gets the same word as an element of the
-		fundamental group of the surrounding manifold by applying the homomorphism induced from the embedding of the surface
-		into the manifold.
+		Given a word in the fundamental group of the surface (represented as a list of numbers, the so-called Tietze list representation),
+		gets the same word as an element of the fundamental group of the surrounding manifold by applying the homomorphism induced from the
+		embedding of the surface into the manifold.
+		For example, the element aBAC would be represented as [1, -2, -1, -3].
 		"""
 		embedding = self.fundamental_group_embedding()
 		embedded_word = []
@@ -454,12 +473,20 @@ class NormalSurface:
 				embedded_word += [-num for num in embedding[-elt - 1][::-1]]
 		return embedded_word
 
-
 	def sage_group(self, simplified = True):
 		"""
 		Returns a presentation of the fundamental group of this surface as a Sagemath finitely presented group object
 		By default, returns a simplified presentation of the fundamental group, if simplified is False, returns the presentation
 		coming from the generators and relations returned by fundamental_group_generators and surface_relations.
+
+		The fundamental group of boundary torus of the exterior of the figure 8 knot as a Sagemath group object
+		>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+		>>> S.sage_group()
+		Finitely presented group < x0, x3 | x3^-1*x0*x3*x0^-1 >
+
+		Unsimplified version of the above group
+		>>> S.sage_group(simplified=False)
+		Finitely presented group < x0, x1, x2, x3, x4 | x2^-1*x1^-1, x0^-1*x4^-1*x3, x0*x1, x3^-1*x2*x4 >
 		"""
 		generators = self.fundamental_group_generators()
 		relations = self.relations(True)
@@ -470,68 +497,6 @@ class NormalSurface:
 			return G.simplification_isomorphism().codomain()
 		else:
 			return G
-
-	# Should not be included in final code
-	def surface_relations_as_holonomy_matrices(self):
-		relations = self.get_embedded_relations()
-		G = self.manifold.fundamental_group(simplify_presentation=False)
-		for embedded_rel in relations:
-			mat = Tietze_to_matrix(embedded_rel, G)
-			Id = matrix.identity(CC, 2)
-			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
-				print(embedded_rel)
-				print(mat)
-				raise RuntimeError('One of the relations was not plus or minus the identity')
-
-	# Should not be included in final code
-	def relations_as_holonomy_matrices(self):
-		relations = self.relations(surface_relations=False)
-		G = self.manifold.fundamental_group(simplify_presentation=False)
-		for relation in relations:
-			mat = Tietze_to_matrix(relation, G)
-			Id = matrix.identity(CC, 2)
-			print(mat)
-			if not ((Id - mat).norm() < .01 or (Id + mat).norm() < .01):
-				print(relation)
-				print(mat)
-				raise RuntimeError('One of the relations was not plus or minus the identity')
-
-	# Should not be included in final code
-	def get_embedded_relations(self):
-		surface_relations = self.relations(True)
-		embedding = self.fundamental_group_embedding()
-		embedded_relations = []
-		for i in range(len(surface_relations)):
-
-			surf_rel = surface_relations[i]
-			# print('new relation')
-			# print('surf_rel', surf_rel)
-			# print('embedding', embedding)
-			embedded_rel = []
-			for elt in surf_rel:
-				if elt > 0:
-					embedded_rel += embedding[elt - 1]
-					# print(elt, embedding[elt - 1])
-				else:
-					embedded_rel += [-num for num in embedding[-elt - 1][::-1]]
-					# print(elt, [-num for num in embedding[-elt - 1][::-1]])
-			# print('embedded_rel', embedded_rel)
-			embedded_relations.append(embedded_rel)
-		return embedded_relations
-
-	# Should not be included in final code
-	def relation_check(self):
-		"""
-		Writes the relations for the surface fundamental group in terms of the fundamental group of the manifold
-		"""
-		embedded_relations = self.get_embedded_relations()
-		relations = self.relations(False)
-		assert len(relations) == len(embedded_relations)
-		F = FreeGroup(len(self.fundamental_group_generators()))
-		sage_embedded_relations = [F(rel) for rel in embedded_relations]
-		sage_relations = [F(rel) for rel in relations]
-		return zip(sage_embedded_relations, sage_relations)
-
 
 	def surface_generator_of_edge(self, initial, end, faces):
 		"""
@@ -559,28 +524,12 @@ class NormalSurface:
 				return 0
 		raise RuntimeError("An edge was given which was not in the surface")
 
-	# Probably remove this since we have other features that do similar things
-	def simplify_representation(self):
-		'''
-		TO-DO(?): write a method to simplify representation of surface given its generators and relations
-		(may have to use magma?)
-		'''
-		gen = self.fundamental_group_embedding()
-		relation = self.surface_relations()
-		F = FreeGroup(len(gen))
-		rel_in_G = [F(rel) for rel in relation]
-		G = F/rel_in_G
-		iso = G.simplification_isomorphism()
-
-		return iso.codomain()
-
-		#goal: find simplified_group = []
-		pass
-
-	def plot_limit_set(self, name=None, simplify_presentation=True, num_points = 10000):
+	def plot_limit_set(self, name=None, num_points = 10000):
 		"""
 		Plots the limit set of the normal surface and saves it with the given file name.
-		If a file name is not given the plot will be saved as limit_set.png.
+		If a file name is not given the plot will be saved as 'limit_set.png'.
+		By default, 10,000 randomly chosen points are plotted. This number can be changed by setting the num_points argument.
+		In case the generators of the normal surface are all trivial we print the statement 'all generators = I' and no plot is saved.
 		"""
 		gens = self.fundamental_group_embedding()
 		G = self.manifold.fundamental_group(simplify_presentation=False)
@@ -592,8 +541,7 @@ class NormalSurface:
 			if (gen - I).norm() > 0.01:
 				gens_excludeI.append(gen)
 
-		# in case the generators of the normal surface are all trivial we print this statement and no plot is saved
-		# (should be checked for totally geodesic surfaces at some point, once done this part can be removed)
+		# checks for the case where generators of the normal surface are all trivial
 		if len(gens_excludeI) == 0:
 			print('all generators = I')
 		else:
@@ -620,178 +568,16 @@ class NormalSurface:
 			else:
 				raise TypeError('Name must be a string')
 
-	# Not doable as a small side project, will be a project on its own in the future (maybe?)
-	def plot_finer_limit_set(self, name=None, max_dist = .1):
-		graph = nx.Graph()
-		graph.add_node(tuple())
-		simpG = self.regina_group()
-		print(simpG)
-		iso = simpG.intelligentSimplify()  # from the unsimplified group to the simplified one
-		inv_iso = regina.HomGroupPresentation(iso)
-		inv_iso.invert()  # from the simplified group to the unsimplified one
-		print(inv_iso)
-		print(simpG)
-		assert len(simpG.relations()) == 1
-		relation = simpG.relations()[0]
-		word = regina_term_to_Tietze(relation)
-		assert len(word) % 2 == 0
-		points = [[letter] for letter in word]
-		for point in points:
-			graph.add_edge(tuple(), tuple(point))
-		current_max_dist = float('inf')
-		# the function used to convert a Tietze representation into a string which is digestible by regina
-		if simpG.countGenerators() > 26:
-			Tietze_converter = Tietze_to_long_string
-		else:
-			Tietze_converter = Tietze_to_string
-		snappyG = self.manifold.fundamental_group(simplify_presentation=False)
-		origin = vector(CC, [0, 1])
-		pairs_to_be_done = []
-		for i, point in enumerate(points):
-			# Here we're setting the assumption that we're taking the cyclic ordering to be the ordering given by
-			# going along the initial word from left to right (i.e. in the word abABcdCD, the ordering goes from a to b
-			# to A to B etc.
-			pairs_to_be_done.append((point, points[(i+1) % len(points)]))
-		while len(pairs_to_be_done) > 0:
-			a_word, b_word = pairs_to_be_done.pop(0)
-			# convert from the Tietze words in the simplified group to a matrix
-			a = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(a_word))))), snappyG)
-			b = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(b_word))))), snappyG)
-			# Apply the matrices on a point
-			pta = a * origin
-			ptb = b * origin
-			# Make the points be complex numbers
-			pta = pta[0] / pta[1]
-			ptb = ptb[0] / ptb[1]
-			# If the points are close enough together we don't need to add points between
-			if (pta - ptb).abs() < max_dist:
-				continue
-			# If the points are too far from each other, we add points between
-
-			# Get the common suffix between the two words
-			# Given a = [1,37,3], b = [5,37,3], the common_suffix_length should be 2
-			length = min(len(a), len(b))
-			common_suffix_length = 0
-			for i in range(length):
-				if a[-i - 1] != b[-i - 1]:
-					common_suffix_length = i
-					break
-			common_suffix = a[len(a) - common_suffix_length:]
-			a_prefix = a[0 : len(a) - common_suffix_length]
-			b_prefix = b[0 : len(b) - common_suffix_length]
-			if len(a_prefix) == 0 or len(b_prefix == 0):
-				# Cases 3 or 4, they lie on the same "octagon" but don't branch
-				# TODO: Case 3, there is some space between them, but on still on same octagon (Fill in points in between)
-				# Make sure to know which way around the octagon to go
-				# TODO: Case 4, no space between them, very bad (Enter a new octagon)
-				pass
-			else:
-				# Check if they are on the same octagon
-				a_letter = a_prefix[-1]
-				b_letter = b_prefix[-1]
-				a_index = word.index(a_letter)
-				b_index = word.index(b_letter)
-				a_backwards_index = word.index(-a_letter)
-				b_backwards_index = word.index(-b_letter)
-				if (a_backwards_index + 1) % len(word) == b_index or (b_backwards_index + 1) % len(word) == a_index:
-					# The case where we're in the octagon
-					a_prefix_in_octagon = []
-					for letter in a_prefix:
-						pass
-					# they are in the octagon but one is not a subset of the other (fill in points in between)
-
-				else:
-					# There is no common octagon
-					# This is the easiest case
-					if a_index < b_index:
-						letters = word[a_index + 1: b_index]
-					else:
-						letters = word[a_index + 1:] + word[:b_index]
-					new_words = []
-					for letter in letters:
-						new_words.append(common_suffix + [letter])
-					pair_words = [a] + new_words + [b]
-					for i in range(len(pair_words) - 1):
-						pairs_to_be_done.append((pair_words[i], pair_words[i + 1]))
-
-
-
-			# if b_branch_letter is directly to the right of a_branch_letter in the circular ordering
-			a_branch_index = word.index(a_branch_letter)
-			b_branch_index = word.index(b_branch_letter)
-			# make the point in the middle
-			# if when the paths branch, the two branches are adjacent to each other
-			if b_branch_index - a_branch_index in [1, -(len(word) - 1)]:
-				# choose the shorter branch and turn it towards the other branch
-				if len(a) < len(b):
-					middle = [word[(a_branch_index + len(word) // 2 + 1) % len(word)], a_branch_letter] + common_suffix
-				else:
-					middle = [word[(b_branch_index + len(word) // 2 - 1) % len(word)], b_branch_letter] + common_suffix
-			else:
-				# if the paths branch with something between them, choose the branch in between
-				if a_branch_index < b_branch_index:
-					middle = [word[ceil((a_branch_index + b_branch_index) // 2)]] + common_suffix
-				else:
-					# we want the middle in the circular orderin which is on the outside of a and b in the list
-					middle = [word[ceil((a_branch_index + b_branch_index + len(word)) / 2) % len(word)]] + common_suffix
-			print('middle')
-			print(middle)
-			points[max_dist_i] = [word[(word.index(a[0]) + len(word) // 2) % len(word)]] + a
-			points[max_dist_i + 1] = [word[(word.index(b[0]) + len(word) // 2) % len(word)]] + b
-			points = points[:max_dist_i + 1] + [middle] + points[max_dist_i + 1:]
-
-
-		fig, ax = plt.subplots()
-		complex_points = []
-		print(points)
-		for point in points:
-			# print(point)
-			# print(Tietze_converter(point))
-			# print(regina.GroupExpression(Tietze_converter(point)))
-			# print(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point))))
-			# print(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point)))))
-			# print(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point)))))
-			# print(snappyG)
-
-
-			mat = Tietze_to_matrix(self.convert_to_word_embedding(regina_term_to_Tietze(inv_iso.evaluate(regina.GroupExpression(Tietze_converter(point))))),
-			                     snappyG)
-			projective_point = mat * origin
-			complex_point = projective_point[0] / projective_point[1]
-			complex_points.append(complex_point)
-		points_real = []
-		points_imaginary = []
-		for pt in complex_points:
-			points_real.append((pt[0] / pt[1]).real())
-			points_imaginary.append((pt[0] / pt[1]).imag())
-		ax.plot(points_real, points_imaginary, 'bo')
-
-		if name is None:
-			fig.savefig('limit_set')
-		elif isinstance(name, str):
-			fig.savefig(name)
-		else:
-			raise TypeError('Name must be a string')
-
-		return points, complex_points
-
-		# TODO: When running the code, we get to a point where we have two branches, a and b.
-		# When we find the middle point, it ends up being a subset of one of a or b.
-		# Then when we extend, we end up getting a or b exactly afterwards. This causes the same point to be added forever
-		# In this process, the two points are getting slightly farther and farther away each time actually (not good)
-
-		# Two fixes:
-		# Add in some randomness?
-		# Try and come up with a deterministic way to stop this from happening
-
-
 
 class Polygon:
+	"""
+	A class used to store information about normal discs.
+	"""
 	def __init__(self, manifold):
 		# Note that most of the indexing here follows the conventions from Regina, but this object stores a reference
-		# to a snappy manifold (which are not always completely compatible).
+		# to a Snappy manifold (which are not always completely compatible).
 
-		# Stored in edge order based on regina's permuation system
+		# Stored in edge order based on Regina's permuation system
 		self.adjacent_discs = []  # are our Polygon classes
 		# The indices of the tetrahedron that is adjacent to this one across the edge in edges
 		self.adjacent_tets = []
@@ -799,7 +585,7 @@ class Polygon:
 		self.faces = []
 		# The index of the tetrahedron that this normal disk sits inside
 		self.tetrahedron = None
-		# The (snappy) manifold that this normal disc lies in
+		# The (Snappy) manifold that this normal disc lies in
 		self.manifold = manifold
 		# The disc type (a number from 0-6 inclusive, no octs or tubes!)
 		self.disc_type = None
@@ -809,8 +595,8 @@ class Polygon:
 	def get_id_numbers(self):
 		"""
 		Regina indexes normal discs as tuples of three numbers, the first entry is the index of the tetrahedron it lies in,
-		the second is the disc type, the third is the index of the disc among the same types. This function allows us to access this information
-		for NormalSurface instances.
+		the second is the disc type, the third is the index of the disc among the same types.
+		This function allows us to access this information for NormalSurface instances.
 		"""
 		return self.tetrahedron, self.disc_type, self.disc_index
 
@@ -841,7 +627,10 @@ class Polygon:
 				raise TypeError(f"Comparison between Polygon and {type(other)} not allowed")
 
 
-class Triangle (Polygon):
+class Triangle(Polygon):
+	"""
+	A subclass of Polygon which is a triangle.
+	"""
 	def __init__(self, manifold):
 		super().__init__(manifold)
 		self.adjacent_discs = [None] * 3
@@ -852,7 +641,10 @@ class Triangle (Polygon):
 		return True
 
 
-class Quad (Polygon):
+class Quad(Polygon):
+	"""
+	A subclass of Polygon which is a quad.
+	"""
 	def __init__(self, manifold):
 		super().__init__(manifold)
 		self.adjacent_discs = [None] * 4
@@ -862,15 +654,23 @@ class Quad (Polygon):
 	def is_quad(self):
 		return True
 
+
+
 def id_numbers_from_DiscSpec(disc_spec):
+	"""
+	Retrieves the ID numbers (index of tetrahedron, disc type, and index of disc among same types) of a Regina DiscSpec object.
+	"""
 	return disc_spec.tetIndex, disc_spec.type, disc_spec.number
 
-
 def vec_to_NormalSurface(vector, M, coord=regina.NS_STANDARD):
-	'''
-	vector is a list of integers, M is snappy manifold
-	returns our normal surface from the vector
-	'''
+	"""
+	Returns a NormalSurface object from its vector, given as a list of integers, and the Snappy manifold it lies in.
+
+	Construct the exterior of the figure 8 knot as a NormalSurface then display its polygons.
+	>>> S = vec_to_NormalSurface([1, 1, 1, 1, 0, 0, 0]*2, snappy.Manifold('4_1'))
+	>>> S.polygons_list
+	[tri:0.0.0, tri:0.1.0, tri:0.2.0, tri:0.3.0, tri:1.0.0, tri:1.1.0, tri:1.2.0, tri:1.3.0]
+	"""
 	MR = regina.Triangulation3(M)
 	SR = regina.NormalSurface(MR, coord, regina.VectorLarge(vector))
 	S = from_regina_normal_surface(SR, M)
@@ -878,7 +678,7 @@ def vec_to_NormalSurface(vector, M, coord=regina.NS_STANDARD):
 
 def from_regina_normal_surface(surface, manifold):
 	"""
-	Given a regina normal surface, and a snappy manifold, returns a NormalSurface object
+	Given a Regina normal surface and a Snappy manifold, returns a NormalSurface object.
 	"""
 	DSS = regina.DiscSetSurface(surface)
 	our_surface = NormalSurface(surface, manifold)
@@ -913,8 +713,10 @@ def from_regina_normal_surface(surface, manifold):
 			glue_quads(DSS, disc, face_gluings, face_list, our_surface)
 	return our_surface
 
-
 def glue_quads(DSS, disc, face_gluings, face_list, our_surface):
+	"""
+	A helper function used to construct gluings of quads in NormalSurface objects.
+	"""
 	discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
 	for edge_index, perm in enumerate(regina.quadDiscArcs[disc.disc_type - 4]):
 		adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
@@ -924,12 +726,13 @@ def glue_quads(DSS, disc, face_gluings, face_list, our_surface):
 				if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
 					disc.faces[edge_index] = face_list[i]
 					break
-
 		disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
 		disc.adjacent_tets[edge_index] = adj_disc.tetIndex
 
-
 def glue_triangles(DSS, disc, face_gluings, face_list, our_surface):
+	"""
+	A helper function used to construct gluings of triangles in NormalSurface objects.
+	"""
 	discSpec = regina.DiscSpec(disc.tetrahedron, disc.disc_type, disc.disc_index)
 	for edge_index, perm in enumerate(regina.triDiscArcs[disc.disc_type]):
 		adj_disc, other_perm = DSS.adjacentDisc(discSpec, perm)
@@ -939,32 +742,43 @@ def glue_triangles(DSS, disc, face_gluings, face_list, our_surface):
 				if embedding.face() == face_index and embedding.simplex().index() == disc.tetrahedron:
 					disc.faces[edge_index] = face_list[i]
 					break
-		# WHY BEN?!
 		disc.adjacent_discs[edge_index] = our_surface.get_polygon(adj_disc.tetIndex, adj_disc.type, adj_disc.number)
 		disc.adjacent_tets[edge_index] = adj_disc.tetIndex
 
-
 def Tietze_to_string(word):
 	"""
-	From the Tietze list of a word in a group, returns the snappy-like string associated to it. For example, for the
-	word [1,-3,4,2,-1], this returns the string 'aCdbA'
-	Note will not work for more than 26 generators
+	From the Tietze list of a word in a group, returns the Snappy-like string associated to it.
+	Note: this will not work for more than 26 generators, use Tietze_to_long_string instead.
+	>>> Tietze_to_string([1,-3,4,2,-1])
+	'aCdbA'
 	"""
 	alphabet = 'abcdefghijklmnopqrstuvwxyz'
 	our_alphabet = '?' + alphabet + alphabet.upper()[::-1]
 	return ''.join([our_alphabet[index] for index in word])
 
 def Tietze_to_long_string(elt, regina_conventions=True):
+	"""
+	From the Tietze list of a word in a group, returns the Regina-like string associated to it by default.
+	Note: unlike Tietze_to_string this works for any number of generators.
+	>>> Tietze_to_long_string([1,-3,4,2,-1])
+	'g0g2^-1g3g1g0^-1'
+
+	For a Tietze list of a word in a group with more than 26 generators this function can be used to find the Snappy-like string
+	by setting the argument regina_conventions to True.
+	Note: in the case with less than 26 generators, use Tietze_to_string
+	>>> Tietze_to_long_string([1,-27,10,35,-2], regina_conventions=False)
+	'x1X27x10x35X2'
+	"""
 	word = ''
 	if regina_conventions:
-		# Using regina conventions
+		# Using Regina conventions
 		for num in elt:
 			if num > 0:
 				word += 'g' + str(num - 1)
 			else:
 				word += 'g' + str(abs(num) - 1) + '^-1'
 	else:
-		# Using snappy conventions
+		# Using Snappy conventions
 		for num in elt:
 			if num > 0:
 				word += 'x' + str(num)
@@ -974,14 +788,20 @@ def Tietze_to_long_string(elt, regina_conventions=True):
 
 def Tietze_to_matrix(word, G):
 	"""
-	Given a word in the snappy fundamental group G (coming from a call to fundamental_group on a manifold M), gives the
-	SL2(C) matrix corresponding to it
+	Given a word in the Snappy fundamental group G (coming from a call to fundamental_group on a manifold M), gives the
+	SL2(C) matrix corresponding to it.
+
+	Matrix corresponding to the word [1, -2] in the fundamental group of the exterior of the figure 8 knot
+	>>> G = snappy.Manifold('4_1').fundamental_group()
+	>>> Tietze_to_matrix([1, -2], G)
+	[ 6.66000000000000e-16 + 3.46410161513775*I    -0.866025403784438 - 2.50000000000000*I]
+	[    2.59807621135331 + 0.499999999999999*I -2.00000000000000 - 6.66000000000000e-16*I]
 	"""
 	return G.SL2C(Tietze_to_string(word))
 
 def regina_term_to_Tietze(elt):
 	"""
-	Given a regina GroupExpression, for example, g0g1^-1 returns the Tietze representation of the term as a list, in this
+	Given a Regina GroupExpression, for example, g0g1^-1 returns the Tietze representation of the term as a list, in this
 	case, [1, -2].
 	"""
 	Tietze = []
@@ -996,15 +816,11 @@ def regina_term_to_Tietze(elt):
 
 def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 	"""
-	Given a manifold M, this returns the holonomy matrices. The size parameter defines an upper bound for the degree of
-	the field extension that the entries of the holonomy matrices live in. If try_higher is true, this will increase the
-	size parameter (by doubling the current size repeatedly) until it finds the right field. If try_higher is false and
-	the field is not found, this returns None
-
-	TODO: Maybe add a check to make sure this is indeed a faithful representation of the manifold group?
-	(Checking it's a representation should be easy, checking that it's faithful will not be easy)
+	Given a manifold M, this returns the exact form of the holonomy matrices.
+	The size parameter defines an upper bound for the degree of the field extension that the entries of the holonomy matrices live in.
+	If try_higher is True, this will increase the size parameter (by doubling the current size repeatedly) until it finds the right field.
+	If try_higher is False and the field is not found, this returns None.
 	"""
-
 	# Gets the field information (the field as an extension of the rationals and what each matrix entry is in that field)
 	group_field_info = None
 	while group_field_info is None:
@@ -1016,10 +832,10 @@ def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 
 	F = group_field_info[0]
 	entries = group_field_info[2]
+	# Snappy returns the matrix entries as a list, so we reformat this as a list of matrices
 	mat_space = MatrixSpace(F, 2)
 	assert len(entries) % 4 == 0
 	num_mats = len(entries) // 4
-	# assert len(entries) // 4 == len(M.fundamental_group().generators())
 	exact_matrices = []
 	for i in range(num_mats):
 		mat = mat_space(group_field_info[2][4 * i:4 * (i + 1)])
@@ -1027,14 +843,19 @@ def get_exact_holonomy_matrices(M, size = 40, try_higher = True):
 	return exact_matrices
 
 def get_exact_generators(M, S_vec):
+	"""
+	Given a Snappy manifold and vector of a normal surface (as a list of integers) returns the exact holonomy matrices of the fundamental
+	group of the surface.
+	Prints information about the returned matrices when run.
+	"""
 	S = vec_to_NormalSurface(S_vec, M)
 	gens = S.fundamental_group_embedding()
 	matrices = get_exact_holonomy_matrices(M)
 	print('matrix generators for the manifold group')
 	for mat in matrices:
 		print(mat)
-	print('field information')
 	field = matrices[0].base_ring()
+	print('field information')
 	print(field)
 	surface_matrices = []
 	for gen in gens:
@@ -1049,10 +870,14 @@ def get_exact_generators(M, S_vec):
 	for mat in surface_matrices:
 		print(mat)
 		print('trace')
-		print(mat.trace(), mat.trace())
+		print(mat.trace())
 	return surface_matrices
 
 def get_surface_trace_field(M, S_vec):
+	"""
+	Given a Snappy manifold and vector of a normal surface (as a list of integers) returns the exact trace field of the fundamental
+	group of the surface.
+	"""
 	mats = get_exact_generators(M, S_vec)
 	F = mats[0].base_ring()
 	N = len(mats)
@@ -1069,35 +894,9 @@ def get_surface_trace_field(M, S_vec):
 	trace_field = F.subfield_from_elements(non_invariant_gens)
 	return trace_field
 
-
-
-
-def surface_generators(surface, manifold, SL2C=True):
-	our_surface = from_regina_normal_surface(surface, manifold)
-	generators = our_surface.fundamental_group_embedding()
-	if SL2C:
-		G = M.fundamental_group(simplify_presentation=False)
-		return [Tietze_to_matrix(word, G) for word in generators]
-	else:
-		return [Tietze_to_string(word) for word in generators]
-
-def surface_group_in_PSL2R(surface, manifold):
-	gens = surface_generators(surface, manifold)
-	gens_traces = [gen.trace().imag().abs() for gen in gens]
-	if max(gens_traces) < 0.1:
-		good_gens = []
-		identity = matrix.identity(gens[0].base_ring(), 2)
-		for mat in gens:
-			if (mat - identity).norm('frob') >= 10**(-6):
-				good_gens.append(mat)
-		return preserves_hermitian_form(good_gens)[0], len(good_gens)
-	else:
-		return preserves_hermitian_form(gens)[0]
-
 def is_obviously_a_surface_group(G):
 	"""
-	Tests whether the given presentation is transparently
-	one of the fundamental group of an orientable surface.
+	Tests whether the given presentation is transparently one of the fundamental group of an orientable surface.
 	"""
 	# Code provided by Nathan Dunfield
 
@@ -1123,48 +922,11 @@ def is_obviously_a_surface_group(G):
 
 	return len(PermutationGroup(perms).orbits()) == 1
 
-
-
-def run_on_knots():
-	# number of alternating knots starting at crossing number 4
-	num_alternating = [1, 2, 3, 7, 18, 41, 123, 367, 1288, 4878, 19536, 85263, 379799, 1769979, 8400285]
-	for crossing, num in zip(range(4, 20), num_alternating):
-		knot_strs = [f'K{crossing}a{i+1}' for i in range(num)]
-		for string in knot_strs:
-			M = snappy.Manifold(string)
-			print(M)
-			if M.volume() < 2:
-				print('Manifold not hyperbolic')
-				continue
-			print(f'num tetrahedra: {M.num_tetrahedra()}')
-			euler = -2
-			while(True):
-				try:
-					cs = nscomplex.ConnectedSurfaces(M, euler)
-					break
-				except AssertionError:
-					euler = euler-2
-			LW = cs.essential_faces_of_normal_polytope()
-			surfaces = []
-			for face in LW.maximal:
-				surfaces = surfaces + face.vertex_surfaces
-			if len(surfaces) == 0:
-				print('Manifold has no closed essential surfaces which are not boundary parallel')
-			for surface in surfaces:
-				result = surface_group_in_PSL2R(surface.surface, M)
-				print(result, M)
-
-def boundary_to_surface(M):
-	# M: regina triangulation, make sure to run it only on knot complements
-	num_tet = M.size()
-	surface_vector = [1, 1, 1, 1, 0, 0, 0] * num_tet
-	return regina.NormalSurface(M, regina.NS_STANDARD, surface_vector)
-
 def find_surfaces(vertex_surfaces, e):
-	'''
-	vertex_surfaces: list of regina normal surfaces that are vertex surfaces
-	modified to return all surfaces of a given euler characteristic (not genus)
-	'''
+	"""
+	Given a list of Regina normal surfaces that are vertex surfaces and a certain Euler characteristic, returns all normal surfaces of
+	the given Euler characteristic (not genus).
+	"""
 	NS = vertex_surfaces
 	NS_nscomplex = [surfaces.NormalSurface(S, i) for i, S in enumerate(NS) if S.eulerChar() < 0]
 	all_faces = faces.admissible_faces(NS_nscomplex)
@@ -1172,332 +934,3 @@ def find_surfaces(vertex_surfaces, e):
 	for AF in all_faces:
 		all_surfaces = all_surfaces + AF.surfaces_euler_in_interior(e)
 	return all_surfaces
-
-def main():
-	import matplotlib.pyplot as plt
-	import doubling
-	M = snappy.Manifold('10_135')
-	print(f'num tetrahedra: {M.num_tetrahedra()}')
-	surfaces = nscomplex.ConnectedSurfaces(M, -8)
-	print(regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_AN_QUAD_OCT_CLOSED))
-	print(surfaces.essential_faces_of_normal_polytope())
-	print(f'number incompressible: {len(surfaces.incompressible)}')
-	regina_surface = surfaces.normal[0].surface
-	print(regina_surface.vector())
-	our_surface = from_regina_normal_surface(regina_surface, M)
-	surface_group_in_PSL2R()
-	# G = our_surface.dual_graph()
-	# nx.draw(G)
-	# print(len(G.edges()))
-	# for edge in G.edges():
-	#	print(edge)
-	# plt.savefig('/home/joseph/Desktop/graph example.png')
-	# print(type(list(our_surface.fundamental_group_generators())[0]))
-	# print(surface_group_in_PSL2R(regina_surface, M))
-
-
-def main2():
-	# import doubling
-	# T = doubling.read_triangulation_info('example_manifold_2nd_last.txt')
-	# Tr = T.regina_triangulation()
-	# Tr.idealToFinite()
-	# Tr.intelligentSimplify()
-	# Tr = doubling.double_regina_triangulation(Tr)
-	# Tr.finiteToIdeal()
-	# Tr.intelligentSimplify()
-	# M = snappy.Manifold(Tr.snapPea())
-	M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
-	print('M:', M.fundamental_group(simplify_presentation=False))
-	print(M.num_tetrahedra())
-	# M.randomize()
-	# M.simplify()
-	surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED, algHints=regina.NS_VERTEX_DD)
-	print('num surfaces', len(surfaces))
-	surfaces_vec = []
-	for S in surfaces:
-		V = S.vector()
-		V_int = [int(n.stringValue()) for n in V]
-		surfaces_vec.append(V_int)
-	with open("surfaces_vertex.pickle", "wb") as file:
-		pickle.dump(surfaces_vec, file)
-	surfaces_gen2 = find_surfaces(surfaces, 2)
-	print('num genus 2 surfaces', len(surfaces_gen2))
-	surfaces_gen2_vec = []
-	for S in surfaces_gen2:
-		V = S.vector()
-		V_int = [int(n.stringValue()) for n in V]
-		surfaces_vec.append(V_int)
-	with open("surfaces_all.pickle", "wb") as file:
-		pickle.dump(surfaces_gen2_vec, file)
-
-		# print(surface_group_in_PSL2R(surface, M))
-		# gens_matrix = [Tietze_to_matrix(gen, M).trace().imag().abs() for gen in gens]
-		# if max(gens_matrix) < 0.1:
-		#    print(surface)
-		#    for gen in gens:
-		# 	   print(Tietze_to_matrix(gen, M))
-		# print(surface_group_in_PSL2R(surface, M))
-	# # print(M.num_cusps())
-	# N = snappy.Manifold('4_1')
-	# print(N)
-	# N.dehn_fill((1,0), 0)
-	# print(N.fundamental_group())
-	# print(N)
-	# print(N.num_cusps())
-	# M.dehn_fill((92341, 700), 1)
-	# M.randomize()
-	# D = M.dirichlet_domain()
-	# M = snappy.Manifold(D)
-	# print(M.num_tetrahedra())
-	# print(M.num_cusps())
-	# print(M.identify())
-	# Tr.normalSurfaces()
-	# cs = nscomplex.ConnectedSurfaces(M, -2)
-	# for surface in S:
-	#	print(surface_group_in_PSL2R(surface, M))
-
-
-def main3():
-	M = snappy.Manifold('4_1')
-	G = M.fundamental_group(simplify_presentation=False)
-	Tr = regina.Triangulation3(M)
-
-	# print('meridian:', G.meridian())
-	# print('longitude:', G.longitude())
-	boundary_surface = from_regina_normal_surface(boundary_to_surface(regina.Triangulation3(M)), M)
-
-	gens = boundary_surface.fundamental_group_embedding()
-	relations = boundary_surface.relations()
-	G = M.fundamental_group(simplify_presentation=False)
-	gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
-	gens_string = [Tietze_to_string(gen) for gen in gens]
-	# print(len(boundary_surface.polygons_list))
-
-	# for gen in boundary_surface.fundamental_group_generators():
-	# 	print(boundary_surface.surface_generator_of_edge(*gen))
-
-	# print(boundary_surface.polygons_list)
-
-	for rel in relations:
-		print(Tietze_to_string(rel))
-		G = M.fundamental_group(simplify_presentation=False)
-		print(Tietze_to_matrix(rel, G))
-	# for i in range(len(gens)):
-	# 	for j in range(len(gens)):
-	# 		if i == j:
-	# 			break
-	# 		else:
-	# 			print(gens_matrix[i] * gens_matrix[j] * gens_matrix[i].inverse() * gens_matrix[j].inverse())
-
-def main4():
-	M = snappy.Manifold('4_1')
-	G = M.fundamental_group(simplify_presentation=False)
-	Tr = regina.Triangulation3(M)
-
-	# print('meridian:', G.meridian())
-	# print('longitude:', G.longitude())
-	boundary_surface = from_regina_normal_surface(boundary_to_surface(regina.Triangulation3(M)), M)
-	DSS = regina.DiscSetSurface(boundary_surface.surface)
-
-	gens, tree = boundary_surface.fundamental_group_generators(True)
-	# print(gens)
-	# for i, gen in enumerate(gens):
-	# 	print(i+1)
-	# 	print(gen)
-	# 	print(Tr.faces(2)[gen[2]])
-	# 	print()
-	#
-	# print(tree.edges(keys=True))
-	# print(Tr.faces(2))
-	#
-	# for polygon in boundary_surface.polygons_list:
-	# 	print(polygon)
-	# 	print(regina.triDiscArcs[polygon.disc_type])
-	# 	for perm in regina.triDiscArcs[polygon.disc_type]:
-	# 		print(DSS.adjacentDisc(regina.DiscSpec(*polygon.get_id_numbers()), perm), end=', ')
-	# 	print('\n')
-	print(gens)
-	print(boundary_surface.surface_relations())
-
-
-def main5():
-	# M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
-	# MR = regina.Triangulation3(M)
-	# with open("surfaces_vertex.pickle", "rb") as file:
-	# 	surface_list = pickle.load(file)
-	# print(len(surface_list))
-	# regina_list = []
-	# for S in surface_list:
-	# 	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(S))
-	# 	regina_list.append(SR)
-	M = snappy.Manifold('K12a1')
-	MR = regina.Triangulation3(M)
-	print('num tet', MR.size())
-	regina_list = regina.NormalSurfaces(MR, regina.NS_QUAD_CLOSED, regina.NS_FUNDAMENTAL)
-	print(len(regina_list))
-	surfaces_real = []
-	surfaces_complex = []
-	for surface in regina_list:
-		all_real = True
-		our_surface = from_regina_normal_surface(surface, M)
-		gens = our_surface.fundamental_group_embedding()
-		G = M.fundamental_group(simplify_presentation=False)
-		gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
-		comb = combinations(list(range(len(gens))), 3)
-		for c in list(comb):
-			gen = gens_matrix[c[0]] * gens_matrix[c[1]] * gens_matrix[c[2]]
-			if gen.trace().imag().abs() > 0.001:
-				surfaces_complex.append(surface)
-				all_real = False
-				print('complex', surface)
-				break
-		if all_real:
-			surfaces_real.append(surface)
-			break
-	print("real trace:", surfaces_real)
-	print("at least one complex trace:", surfaces_complex)
-
-
-def main6():
-	M = snappy.Manifold(b"pickle: \x16\x02\x00\t\x01\x01\x01l\xd8\xb4l\x00\x01\x01\x01\x03\xcc\xff\x01\x01\xff\x01\xff\x00\x00\x03Z\xff\x01\xff\x01\x01\xff\x00\x00\x0f\x00\x00\x00ll\xd8\xb4\x00\x01\x01\x010\xca\xff\x01\x01\xff\xff\x01\x00\x00\x00\xc6\xff\x01\x01\xff\x00\x00\x05\x08\x0c\x0el\x93\xd8'\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\x0c\x04\x089\xe1\xb4\xe1\x01\x01\x01\x01\x03\x00\x01\xff\x00\x00\x00\n\x01\xff\x00\x00\x07\x03\x05\x03l\x93\xe1\xb4\x01\x01\x01\x010\x00\x01\xff\x00\x00\x00\x00\x00\x00\x02\x06\x04\nl\xd8\xe1\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x06\x06\x05\x0e\x8dr\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x04\r\x0f\x15l\xe1\x93\x8d\x01\x01\x01\x01\x00\x90\xff\x01\x00\x00\x00\x00\x00\x00\x02\x12\n\x039\x93\x1e\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\xc0\xff\x01\x00\x00\x00\n\r\x0bl9l'\x01\x01\x01\x01\t\x00\xff\x01\x00\x003\x00\xff\x01\x01\xff\x00\x00\x05\x08\t\x14KK\x93\x1e\x01\x01\x01\x01\x00\x00\x00\x00`\x0c\x01\xff\x01\xff\x00\x00\t\x0c\x12\x11'l\xb49\x01\x01\x01\x01\x03\xc0\xff\x01\xff\x01\x00\x00\x00\x00\x00\x00\x03\x02\r\x0b\xe1\xd8\xd8l\x01\x01\x01\x01\t\x00\x01\xff\x00\x00\x00P\xff\x01\x00\x00\x07\x0c\t\x13\xe1\xd8ll\x01\x01\x01\x01\x00\x00\x00\x00\n\x00\xff\x01\x00\x00\x02\x0f\x10\x06'l\xd8\xe1\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x07\x11\x0el9\xd8l\x01\x01\x01\x01\x00P\x01\xff\x00\x00\x00\x00\x00\x00\x11\x0e\x11\x15r\xd8\xb4\x1e\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0b\x0f\x10\x10\x93\xd8\x8d\xb4\x01\x01\x01\x01\x03\x00\xff\x01\x00\x00\x00\x00\x00\x00\x08\x13\x15\x0b9l\x1e\xb4\x01\x01\x01\x01\x00\xc0\xff\x01\x00\x00\x00\x00\x00\x00\x14\r\x14\x12'l\x93l\x01\x01\x01\x01\x00\x00\x00\x00\x03\x00\x01\xff\x00\x00\n\x13\x15\x13K9\xb4'\x01\x01\x01\x01\x00\x00\x00\x00\t\x00\x01\xff\x00\x00\x10\x12\x07\x14KKr\xb4\x01\x01\x01\x01`\x00\x01\xff\x00\x00\x00\x00\x00\x00Regina_Triangulation")
-	MR = regina.Triangulation3(M)
-	with open("surfaces_vertex.pickle", "rb") as file:
-		surface_list = pickle.load(file)
-	n = 9
-	SR = regina.NormalSurface(MR, regina.NS_STANDARD, regina.VectorLarge(surface_list[n]))
-	S = from_regina_normal_surface(SR, M)
-	name = 'limit set-surface' + str(n)
-	S.plot_limit_set(name, num_points=100_000)
-	print('surface', n, SR.eulerChar())
-
-		# print('surface', n)
-		# print('euler char:', SR.eulerChar())
-		# print('compressible:', not SR.isIncompressible())
-		# print('connected:', SR.isConnected())
-		# print('orientable:', SR.isOrientable())
-		# print('embedded:', SR.embedded())
-		# index of sfces with euler char < -2: [15, 17, 21, 22, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265]
-
-def main7():
-	"""
-	Find all the bad manifolds (Manifolds with tetrahedra which are glued to themselves)
-	"""
-	bad_manifolds = []
-	for M in snappy.HTLinkExteriors(alternating = False)[7.2:]:
-		T = snappy.snap.t3mlite.Mcomplex(M)
-		for tet in T.Tetrahedra:
-			if tet in tet.Neighbor.values():
-				bad_manifolds.append(M.name())
-				break
-
-	with open('bad_manifolds.pickle', 'wb') as file:
-		pickle.dump(bad_manifolds, file)
-
-def main8():
-	"""
-	Print exact stuff for a given manifold and normal surface
-	"""
-	M = regina.Triangulation3.tightDecoding(""":("*"/"3")"+"."2"\'","1"5"&"-"0"4"6"86.,7"96/,8"760,9"661,,2-862-2,87282924(325(223(522(4266768696""")
-	M = snappy.Manifold(M)
-	S_vec = (0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0)
-	return get_surface_trace_field(M, S_vec)
-
-def main9():
-	"""
-	Check our new limit set plot function
-	"""
-	vector = (0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,
-	0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,
-	2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0,
-	2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)
-	T = regina.Triangulation3.tightDecoding('1%")"-"(*&"*"+")*\'"(","**/".,+,0"/,-,."0,,,."-*/",*0"+*.*/*0*')
-	M = snappy.Manifold(T)
-	S = vec_to_NormalSurface(vector, M)
-	points, complex_points = S.plot_finer_limit_set('test_limit_set')
-	print(points)
-	print(complex_points)
-
-def main10():
-	"""
-	Check simplified_generators
-	"""
-	M = snappy.HTLinkExteriors(alternating=False)[7.2:][120000]  # this was K15n8371(0,0) and had 18 tetrahedra
-	vec = [1, 1, 1, 1, 0, 0, 0]*18
-	S = vec_to_NormalSurface(vec, M)
-	G = M.fundamental_group(simplify_presentation=False)
-	print(G)
-	gens = S.simplified_generators(False)
-	gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
-
-def test_new_relations():
-	# TODO: m412 breaks fundamental_group_embedding
-	M1 = snappy.Manifold('m004')
-	M2 = snappy.Manifold('m006')
-	M3 = snappy.Manifold('m413')
-	Ms = [M1]
-	for M in Ms:
-		T = regina.Triangulation3(M)
-		print(M)
-		# print(T.detail())
-		vec = [1,1,1,1,0,0,0]*M.num_tetrahedra()
-		S = vec_to_NormalSurface(vec, M)
-
-		print('Surface relations')
-		print(S.relations(True))
-		for rel in S.surface_relations():
-			print(rel)
-		# print('Manifold relations')
-		# print(S.relations_version_2(False))
-		# for rel in S.relations():
-		# 	print(rel)
-		print(S.sage_group())
-		print(S.surface_relations_as_holonomy_matrices())
-
-def print_all_information():
-	M = snappy.Manifold('m004')
-	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
-	for disc in S.polygons_list:
-		print('disc', disc)
-		print('adjacent faces', disc.adjacent_discs)
-		print('regina face indices', disc.faces)
-	T = regina.Triangulation3(M)
-	print(T.detail())
-	gens, tree = S.fundamental_group_generators(return_tree=True)
-	print('gens')
-	for gen in gens:
-		print(gen)
-	print('tree')
-	for edge in tree.edges():
-		print(edge)
-	print('embedding info')
-	print(S.fundamental_group_embedding())
-
-def surface_group_is_fine():
-	M = snappy.Manifold('K15n1234')
-	S = vec_to_NormalSurface([1,1,1,1,0,0,0]*M.num_tetrahedra(), M)
-	G = S.sage_group(False)
-	gens, tree = S.fundamental_group_generators(return_tree=True)
-	print('gens', gens)
-	print('tree edges', tree.edges(keys= True))
-	print(G)
-	Gsimp = G.simplification_isomorphism().codomain()
-	print(Gsimp)
-	print(is_obviously_a_surface_group(Gsimp))
-	for pair in S.relation_check():
-		print(pair)
-	print(S.surface_relations_as_holonomy_matrices())
-	print(S.relations_as_holonomy_matrices())
-
-
-
-
-if __name__ == '__main__':
-	main10()
-
-# TODO: Get rid of print statements
-# TODO: Make limit set plot better
-# TODO: Rerun all the walkofshame things
-# TODO: Tidy up code
-# TODO: Fork and publish somewhere
-# TODO: Merge branches
