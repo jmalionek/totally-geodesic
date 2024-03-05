@@ -113,7 +113,7 @@ def detect_totally_geodesic(manifold, index):
               'tot_geo': tot_geo_surfaces,
               'potential_tot_geo': potential_tot_geo_surfaces}
 
-    directory = '/data/keeling/a/chaeryn2/computation_outputs/'
+    directory = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
     filename = f'link_info_{i}_{M.name()}'
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
