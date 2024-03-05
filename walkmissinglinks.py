@@ -1,13 +1,13 @@
 #! /data/keeling/a/nmd/miniconda3/envs/sage_full/bin/sage-python -u
 
-#SBATCH --array=0-99
+#SBATCH --array=0-4
 #SBATCH --partition m
 #SBATCH --tasks=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --nice=10000
 #SBATCH --time=7-00:00
-#SBATCH --output=/data/keeling/a/chaeryn2/SLURM_print/missing_htlinkexterior%A_%a
-#SBATCH --error=/data/keeling/a/chaeryn2/SLURM_error/missing_htlinkexterior%A_%a
+#SBATCH --output=/data/keeling/a/chaeryn2/SLURM_print/last_missing_htlinkexterior%A_%a
+#SBATCH --error=/data/keeling/a/chaeryn2/SLURM_error/last_missing_htlinkexterior%A_%a
 
 import os
 import pickle
@@ -114,7 +114,7 @@ def detect_totally_geodesic(manifold, index):
               'potential_tot_geo': potential_tot_geo_surfaces}
 
     directory = '/data/keeling/a/chaeryn2/results_links_names_fixed/'
-    filename = f'link_info_{i}_{M.name()}'
+    filename = f'link_info_{index}_{M.name()}'
     with open(directory+filename, 'wb') as file:
         pickle.dump(result, file)
 
@@ -130,22 +130,26 @@ if __name__ == '__main__':
 
     task = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    with open('unfinished_manifolds', 'rb') as f:
-        unfinished = pickle.load(f)
-        unfinished_under13 = [n for n in unfinished if n < 3815]  # there are 370 manifolds in this list
+    unfinished = [1125, 1431, 1441, 1619, 2767]
+    index = unfinished[task]
+    M = snappy.HTLinkExteriors(alternating=False)[7.2:][index]
+    detect_totally_geodesic(M, index)
 
-    mfld_list = []
-    for index in range(task, len(unfinished_under13), 100):
-        i = unfinished_under13[index]
-        found = False
-        for filename in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
-            if 'link_info_%i' % i in filename:
-                found = True
-                break
-        if not found:
-            M = snappy.HTLinkExteriors(alternating=False)[7.2:][i]
-            mfld_list.append([i, M])
-
-    for manifold_info in mfld_list:
-        gc.collect()
-        detect_totally_geodesic(manifold_info[1], manifold_info[0])
+    # with open('unfinished_manifolds', 'rb') as f:
+    #     unfinished = pickle.load(f)
+    #     unfinished_under13 = [n for n in unfinished if n < 3815]  # there are 370 manifolds in this list
+    # mfld_list = []
+    # for index in range(task, len(unfinished_under13), 100):
+    #     i = unfinished_under13[index]
+    #     found = False
+    #     for filename in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
+    #         if 'link_info_%i' % i in filename:
+    #             found = True
+    #             break
+    #     if not found:
+    #         M = snappy.HTLinkExteriors(alternating=False)[7.2:][i]
+    #         mfld_list.append([i, M])
+    #
+    # for manifold_info in mfld_list:
+    #     gc.collect()
+    #     detect_totally_geodesic(manifold_info[1], manifold_info[0])
