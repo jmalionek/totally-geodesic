@@ -34,7 +34,7 @@ def get_all_results(location, filename_word = None, get_manifolds = False):
 		with open(dir + file, 'rb') as f:
 			results = pickle.load(f)
 		for key in keys:
-			if key not in all_results.keys():
+			if key not in results.keys():
 				if key == 'runtime_surfaces':
 					all_results.append(results['runtime_vertex_surfaces'] + results['runtime_enumerate_surfaces'])
 				elif key == 'runtime_gp':
