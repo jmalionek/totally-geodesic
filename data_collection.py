@@ -19,20 +19,29 @@ import numpy as np
 import shutil
 
 
-def get_all_results(filename_word = None, get_manifolds = False):
-	dir = '/data/keeling/a/chaeryn2/tg_computation_outputs/'
+def get_all_results(location, filename_word = None, get_manifolds = False):
+	dir = location
 	if filename_word is None:
 		files = os.listdir(dir)
 	else:
 		files = [file for file in os.listdir(dir) if filename_word in file]
 
-	all_results = {}
+	keys = ['runtime_surfaces', 'runtime_gp']
+
+
+	all_results = {key:[] for key in keys}
 	for file in files:
 		with open(dir + file, 'rb') as f:
 			results = pickle.load(f)
-		for key in results.keys():
+		for key in keys:
 			if key not in all_results.keys():
-				all_results[key] = []
+				if key == 'runtime_surfaces':
+					all_results.append(results['runtime_vertex_surfaces'] + results['runtime_enumerate_surfaces'])
+				elif key == 'runtime_gp':
+					all_results.append(results['runtime_tot_geo'])
+				else:
+					print('BAD THINGS HAVE HAPPENED')
+					assert False
 			else:
 				all_results[key].append(results[key])
 
@@ -180,77 +189,85 @@ def sort_file_names_check_done():
 				print('changed to ', true_name)
 				shutil.copy('/data/keeling/a/chaeryn2/computation_outputs/' + file, dirname + true_name)
 
-def main():
+def save_plots():
+	dir = '/data/keeling/a/chaeryn2/totally-geodesic/data_plots/'
+	link_data, link_manifolds = get_all_results('/data/keeling/a/chaeryn2/results_links_names_fixed/',
+	                                            get_manifolds=True)
+	cover_data, cover_manifolds = get_all_results('/data/keeling/a/chaeryn2/computation_outputs/', filename_word='cover', get_manifolds=True)
+	manifolds = link_manifolds + cover_manifolds
 
-	dir = '/data/keeling/a/chaeryn2/totally-geodesic/'
-	# data, manifolds = get_all_results(get_manifolds=True)
-	# with open('data_collected', 'wb') as f:
-	# 	pickle.dump([data, manifolds], f)
+	with open('data_collected', 'wb') as f:
+		pickle.dump([link_data, link_manifolds, cover_data, cover_manifolds], f)
+
 
 	# in case of repeated use
-	with open('data_collected', 'rb') as file:
-		f = pickle.load(file)
-		data = f[0]
-		manifolds = f[1]
+	# with open('data_collected', 'rb') as file:
+	# 	f = pickle.load(file)
+	# 	link_data, link_manifolds, cover_data, cover_manifolds = f
 
-	times_enum = np.array(data['runtime_surfaces'])
-	times_tg = np.array(data['runtime_gp'])
+	times_enum = np.array(link_data['runtime_surfaces'] + cover_data['runtime_surfaces'])
+	times_tg = np.array(link_data['runtime_gp'] + cover_data['runtime_gp'])
 	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
 
 	print('average runtime: ', np.average(times))
 
-	# fig, ax = plt.subplots()
-	# ax.hist(times_enum, bins = 30, edgecolor = 'black')
-	# ax.set_xlabel('Runtime of enumerating surfaces in seconds')
-	# fig.savefig(dir + 'runtime_enum_histogram.png')
+	fig, ax = plt.subplots()
+	ax.hist(times_enum, bins=30, edgecolor='black')
+	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
+	fig.savefig(dir + 'runtime_enum_histogram.png')
 	#
-	# fig, ax = plt.subplots()
-	# ax.hist(times_tg, bins = 30, edgecolor = 'black')
-	# ax.set_xlabel('Runtime of Algorithm 2 in seconds')
-	# fig.savefig(dir + 'runtime_tot_geo_histogram.png')
-	#
-	# fig, ax = plt.subplots()
-	# volumes = []
-	# tet_dict = {}
-	# tetrahedra = []
-	# for i, M in enumerate(manifolds):
-	# 	if 'solution' not in M.solution_type():
-	# 		volumes.append(M.volume())
-	# 		tet = M.num_tetrahedra()
-	# 		tetrahedra.append(tet)
-	# 		if tet in tet_dict.keys():
-	# 			tet_dict[tet].append(times[i])
-	# 		else:
-	# 			tet_dict[tet] = [times[i]]
-	# 	else:
-	# 		M.randomize()
-	# 		volumes.append(M.volume())
-	# 		tet = M.num_tetrahedra()
-	# 		tetrahedra.append(tet)
-	# 		if tet in tet_dict.keys():
-	# 			tet_dict[tet].append(times[i])
-	# 		else:
-	# 			tet_dict[tet] = [times[i]]
-	#
-	# indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	# volumes = np.array(volumes)
-	# tetrahedra = np.array(tetrahedra)
-	# ax.scatter(volumes[indices], times[indices], s = 5, alpha = .2)
+	fig, ax = plt.subplots()
+	ax.hist(times_tg, bins=30, edgecolor='black')
+	ax.set_xlabel('Runtime of Algorithm 2 in seconds')
+	fig.savefig(dir + 'runtime_tot_geo_histogram.png')
+
+
+
+	fig, ax = plt.subplots()
+	volumes = []
+	tet_dict = {}
+	tetrahedra = []
+	for i, M in enumerate(manifolds):
+		if 'solution' not in M.solution_type():
+			volumes.append(M.volume())
+			tet = M.num_tetrahedra()
+			tetrahedra.append(tet)
+			if tet in tet_dict.keys():
+				tet_dict[tet].append(times[i])
+			else:
+				tet_dict[tet] = [times[i]]
+		else:
+			M.randomize()
+			volumes.append(M.volume())
+			tet = M.num_tetrahedra()
+			tetrahedra.append(tet)
+			if tet in tet_dict.keys():
+				tet_dict[tet].append(times[i])
+			else:
+				tet_dict[tet] = [times[i]]
+
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	volumes = np.array(volumes)
+	tetrahedra = np.array(tetrahedra)
+	ax.scatter(volumes[indices], times[indices], s=5, alpha=.2)
+	ax.set_yscale('log')
+	ax.set_xlabel('Manifold volume')
+	ax.set_ylabel('Log of algorithm runtime in seconds')
+	fig.savefig(dir + 'volume_runtime_scatter.png')
+
+
+
+
+	fig, ax = plt.subplots()
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	volumes = np.array(volumes)
+	ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
+	ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
 	# ax.set_yscale('log')
-	# ax.set_xlabel('Manifold volume')
-	# ax.set_ylabel('Log of algorithm runtime in seconds')
-	# fig.savefig(dir + 'volume_runtime_scatter.png')
-	#
-	# fig, ax = plt.subplots()
-	# indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	# volumes = np.array(volumes)
-	# ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
-	# ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
-	# # ax.set_yscale('log')
-	# ax.set_xlabel('Manifold volume')
-	# ax.set_ylabel('Runtime in seconds')
-	# ax.legend()
-	# fig.savefig(dir + 'volume_runtime_scatter_both.png')
+	ax.set_xlabel('Manifold volume')
+	ax.set_ylabel('Runtime in seconds')
+	ax.legend()
+	fig.savefig(dir + 'volume_runtime_scatter_both.png')
 	#
 	# fig, ax = plt.subplots()
 	# num_tets_list = sorted(list(tet_dict.keys()))
@@ -261,14 +278,16 @@ def main():
 	# ax.set_yscale('log')
 	# fig.savefig(dir + 'box_plot_num_tets_runtime.png')
 	#
-	# fig, ax = plt.subplots()
-	# indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	# ax.scatter(tetrahedra[indices], times[indices], s=5)
-	# ax.set_xticks(np.unique(tetrahedra[indices]))
-	# ax.set_yscale('log')
-	# ax.set_xlabel('Number of tetrahedra')
-	# ax.set_ylabel('Log of algorithm runtime in seconds')
-	# fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
+
+
+	fig, ax = plt.subplots()
+	indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	ax.scatter(tetrahedra[indices], times[indices], s=5)
+	ax.set_xticks(np.unique(tetrahedra[indices]))
+	ax.set_yscale('log')
+	ax.set_xlabel('Number of tetrahedra')
+	ax.set_ylabel('Log of algorithm runtime in seconds')
+	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
 
 	mask = (times > 60)
 	print('Average of enumeration runtime ratios', np.average(times_enum[mask]/times[mask]))
@@ -281,7 +300,7 @@ def main():
 
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(times_tg)), size=5000)
-	ax.scatter(times_enum[indices], times_tg[indices], s = 5, alpha = .2)
+	ax.scatter(times_enum[indices], times_tg[indices], s=5, alpha=.2)
 	ax.set_aspect('equal')
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
 	ax.set_ylabel('Runtime of Algorithm 2 in seconds')
@@ -289,5 +308,5 @@ def main():
 
 
 if __name__ == '__main__':
-	sort_file_names_check_done()
+	save_plots()
 	# downloading files from keeling: scp chaeryn2@keeling.earth.illinois.edu:/path_to_file /path_to_file_on_your_laptop
