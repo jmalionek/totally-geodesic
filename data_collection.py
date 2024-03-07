@@ -26,7 +26,7 @@ def get_all_results(location, filename_word = None, get_manifolds = False):
 	else:
 		files = [file for file in os.listdir(dir) if filename_word in file]
 
-	keys = ['runtime_surfaces', 'runtime_gp']
+	keys = ['runtime_surfaces', 'runtime_gp', 'manifold']
 
 
 	all_results = {key:[] for key in keys}
