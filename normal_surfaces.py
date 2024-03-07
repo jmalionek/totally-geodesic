@@ -25,18 +25,6 @@ class NormalSurface:
 	The vector corresponding to S
 	>>> S.get_vector()
 	(1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0)
-
-	TODO: 2/26 add doctests for the following (without a star) and continue with documentation (line 412)
-	list of functions to have doctests
-		get_vector *
-		dual_graph (some features) *
-		fundamental_group_generators *
-		fundamental_group_embedding *
-		relations *
-		simplified_generators *
-		regina_group *
-		sage_group *
-
 	"""
 	def __init__(self, surface, manifold):
 		"""
