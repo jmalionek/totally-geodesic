@@ -36,9 +36,9 @@ def get_all_results(location, filename_word = None, get_manifolds = False):
 		for key in keys:
 			if key not in results.keys():
 				if key == 'runtime_surfaces':
-					all_results.append(results['runtime_vertex_surfaces'] + results['runtime_enumerate_surfaces'])
+					all_results[key].append(results['runtime_vertex_surfaces'] + results['runtime_enumerate_surfaces'])
 				elif key == 'runtime_gp':
-					all_results.append(results['runtime_tot_geo'])
+					all_results[key].append(results['runtime_tot_geo'])
 				else:
 					print('BAD THINGS HAVE HAPPENED')
 					assert False
