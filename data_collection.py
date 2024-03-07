@@ -196,14 +196,14 @@ def save_plots():
 	cover_data, cover_manifolds = get_all_results('/data/keeling/a/chaeryn2/computation_outputs/', filename_word='cover', get_manifolds=True)
 	manifolds = link_manifolds + cover_manifolds
 
-	with open('data_collected', 'wb') as f:
-		pickle.dump([link_data, link_manifolds, cover_data, cover_manifolds], f)
+	# with open('data_collected', 'wb') as f:
+	# 	pickle.dump([link_data, link_manifolds, cover_data, cover_manifolds], f)
 
 
 	# in case of repeated use
-	# with open('data_collected', 'rb') as file:
-	# 	f = pickle.load(file)
-	# 	link_data, link_manifolds, cover_data, cover_manifolds = f
+	with open('data_collected', 'rb') as file:
+		f = pickle.load(file)
+		link_data, link_manifolds, cover_data, cover_manifolds = f
 
 	times_enum = np.array(link_data['runtime_surfaces'] + cover_data['runtime_surfaces'])
 	times_tg = np.array(link_data['runtime_gp'] + cover_data['runtime_gp'])
