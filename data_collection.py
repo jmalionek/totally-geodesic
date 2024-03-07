@@ -207,7 +207,7 @@ def save_plots():
 
 	times_enum = np.array(link_data['runtime_surfaces'] + cover_data['runtime_surfaces'])
 	times_tg = np.array(link_data['runtime_gp'] + cover_data['runtime_gp'])
-	times = np.array(data['runtime_surfaces']) + np.array(data['runtime_gp'])
+	times = times_tg + times_enum
 
 	print('average runtime: ', np.average(times))
 
