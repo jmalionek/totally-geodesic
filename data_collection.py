@@ -209,7 +209,7 @@ def save_plots():
 	times_tg = np.array(link_data['runtime_gp'] + cover_data['runtime_gp'])
 	times = times_tg + times_enum
 
-	good_times = (times < 5000) & (times > 60)
+	good_times = (times < 5000) & (times_tg > 10)
 	times_enum = times_enum[good_times]
 	times_tg = times_tg[good_times]
 	times = times[good_times]
