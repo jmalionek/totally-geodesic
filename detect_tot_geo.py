@@ -62,30 +62,10 @@ def detect_totally_geodesic(manifold, filename=None):
     tot_geo_surfaces = []
     potential_tot_geo_surfaces = []  # these are surfaces that are orientable and whose traces are all real,
                                      # need to apply steps g, h of Algorithm 2 using nscomplex to check for totally geodesic
-    G = M.fundamental_group(simplify_presentation=False)
+
     for surface in incomp_our_surfaces:
         orientable = surface.surface.isOrientable()
-        all_real = True
-        if orientable:
-            gens = surface.simplified_generators(False)
-        else:
-            vec = surface.get_vector()
-            double_vec = tuple(2*x for x in vec)
-            double_surface = vec_to_NormalSurface(double_vec, M)
-            gens = double_surface.simplified_generators(False)
-        gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
-        comb = list(combinations(list(range(len(gens))), 1)) \
-               + list(combinations(list(range(len(gens))), 2)) \
-               + list(combinations(list(range(len(gens))), 3))
-        for c in comb:
-            if not all_real:
-                break
-            gen = matrix.identity(CC, 2)
-            for n in c:
-                gen *= gens_matrix[n]
-            if gen.trace().imag().abs() > 0.001:
-                all_real = False
-                break
+        all_real = is_Fuchsian(M, surface)
         if orientable and all_real:
             potential_tot_geo_surfaces.append(surface.get_vector())
         elif not orientable and all_real:
@@ -110,3 +90,34 @@ def detect_totally_geodesic(manifold, filename=None):
 
     with open(filename, 'wb') as file:
         pickle.dump(result, file)
+
+
+def is_Fuchsian(M, surface):
+    """
+    Determines whether the given normal_surfaces.NormalSurface object in the given Snappy manifold is Fuchsian.
+    If the given surface is non-orientable, this checks whether its double is Fuchsian.
+    """
+    G = M.fundamental_group(simplify_presentation=False)
+    orientable = surface.surface.isOrientable()
+    all_real = True
+    if orientable:
+        gens = surface.simplified_generators(False)
+    else:
+        vec = surface.get_vector()
+        double_vec = tuple(2 * x for x in vec)
+        double_surface = vec_to_NormalSurface(double_vec, M)
+        gens = double_surface.simplified_generators(False)
+    gens_matrix = [Tietze_to_matrix(gen, G) for gen in gens]
+    comb = list(combinations(list(range(len(gens))), 1)) \
+           + list(combinations(list(range(len(gens))), 2)) \
+           + list(combinations(list(range(len(gens))), 3))
+    for c in comb:
+        if not all_real:
+            break
+        gen = matrix.identity(CC, 2)
+        for n in c:
+            gen *= gens_matrix[n]
+        if gen.trace().imag().abs() > 0.001:
+            all_real = False
+            break
+    return all_real
