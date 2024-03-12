@@ -551,9 +551,12 @@ class NormalSurface:
 			ax.set_yticks(np.linspace(min(points_complex), max(points_complex), 5))
 			if name is None:
 				fig.savefig('limit_set')
+				plt.close(fig)
 			elif isinstance(name, str):
 				fig.savefig(name)
+				plt.close(fig)
 			else:
+				plt.close(fig)
 				raise TypeError('Name must be a string')
 
 

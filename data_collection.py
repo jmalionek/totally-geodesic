@@ -26,7 +26,7 @@ def get_all_results(location, filename_word = None, get_manifolds = False):
 	else:
 		files = [file for file in os.listdir(dir) if filename_word in file]
 
-	keys = ['runtime_surfaces', 'runtime_gp', 'manifold']
+	keys = ['runtime_surfaces', 'runtime_gp', 'num_surfaces', 'manifold']
 
 
 	all_results = {key:[] for key in keys}
@@ -39,6 +39,11 @@ def get_all_results(location, filename_word = None, get_manifolds = False):
 					all_results[key].append(results['runtime_vertex_surfaces'] + results['runtime_enumerate_surfaces'])
 				elif key == 'runtime_gp':
 					all_results[key].append(results['runtime_tot_geo'])
+				elif key == 'num_surfaces':
+					if 'all_surfaces_vec' in results.keys():
+						all_results[key].append(len(results['all_surfaces_vec']))
+					else:
+						all_results[key].append(len(results['all_surfaces']))
 				else:
 					print('BAD THINGS HAVE HAPPENED')
 					assert False
@@ -208,8 +213,10 @@ def save_plots():
 	times_enum = np.array(link_data['runtime_surfaces'] + cover_data['runtime_surfaces'])
 	times_tg = np.array(link_data['runtime_gp'] + cover_data['runtime_gp'])
 	times = times_tg + times_enum
+	num_sfces = np.array(link_data['num_surfaces'] + cover_data['num_surfaces'])
 
-	good_times = (times < 5000) & (times_tg > 10)
+	# We exclude outliers where runtime was too large
+	good_times = (times < 5000)
 	times_enum = times_enum[good_times]
 	times_tg = times_tg[good_times]
 	times = times[good_times]
@@ -221,13 +228,21 @@ def save_plots():
 	ax.hist(times_enum, bins=30, edgecolor='black')
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
 	fig.savefig(dir + 'runtime_enum_histogram.png')
-	#
+	plt.close(fig)
+
+	# When considering runtimes of Algorithm2 we exclude any manifolds where there were no surfaces
+	# (i.e. manifolds where runtime for Algorithm2 is 0)
+	good_times = (num_sfces > 0)
+	times_enum = times_enum[good_times]
+	times_tg = times_tg[good_times]
+	times = times[good_times]
+	manifolds = manifolds[good_times]
+
 	fig, ax = plt.subplots()
 	ax.hist(times_tg, bins=30, edgecolor='black')
 	ax.set_xlabel('Runtime of Algorithm 2 in seconds')
 	fig.savefig(dir + 'runtime_tot_geo_histogram.png')
-
-
+	plt.close(fig)
 
 	fig, ax = plt.subplots()
 	volumes = []
@@ -260,20 +275,18 @@ def save_plots():
 	ax.set_xlabel('Manifold volume')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
 	fig.savefig(dir + 'volume_runtime_scatter.png')
+	plt.close(fig)
 
-
-
-
-	fig, ax = plt.subplots()
-	indices = np.random.choice(np.arange(len(volumes)), size=5000)
-	volumes = np.array(volumes)
-	ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
-	ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
-	# ax.set_yscale('log')
-	ax.set_xlabel('Manifold volume')
-	ax.set_ylabel('Runtime in seconds')
-	ax.legend()
-	fig.savefig(dir + 'volume_runtime_scatter_both.png')
+	# fig, ax = plt.subplots()
+	# indices = np.random.choice(np.arange(len(volumes)), size=5000)
+	# volumes = np.array(volumes)
+	# ax.scatter(volumes[indices], times_enum[indices], s=5, alpha=.2, c='red', marker="o", label='Enumerating surfaces')
+	# ax.scatter(volumes[indices], times_tg[indices], s=5, alpha=.2, c='blue', marker="X", label='Algorithm 2')
+	# # ax.set_yscale('log')
+	# ax.set_xlabel('Manifold volume')
+	# ax.set_ylabel('Runtime in seconds')
+	# ax.legend()
+	# fig.savefig(dir + 'volume_runtime_scatter_both.png')
 	#
 	# fig, ax = plt.subplots()
 	# num_tets_list = sorted(list(tet_dict.keys()))
@@ -283,8 +296,6 @@ def save_plots():
 	# ax.set_ylabel('Algorithm runtime in seconds')
 	# ax.set_yscale('log')
 	# fig.savefig(dir + 'box_plot_num_tets_runtime.png')
-	#
-
 
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(volumes)), size=5000)
@@ -294,15 +305,10 @@ def save_plots():
 	ax.set_xlabel('Number of tetrahedra')
 	ax.set_ylabel('Log of algorithm runtime in seconds')
 	fig.savefig(dir + 'tetrahedra_runtime_scatter.png')
+	plt.close(fig)
 
-	mask = (times > 60)
-	print('Average of enumeration runtime ratios', np.average(times_enum[mask]/times[mask]))
-	print('Average of algorithm2 runtime ratios', np.average(times_tg[mask]/times[mask]))
-
-	# <printed results>
-	# average runtime: 1584.3934003688878
-	# Average of enumeration runtime ratios 0.5674393872653163
-	# Average of algorithm2 runtime ratios 0.43256061273468366
+	print('Average of enumeration runtime ratios', np.average(times_enum/times))
+	print('Average of algorithm2 runtime ratios', np.average(times_tg/times))
 
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(times_tg)), size=5000)
@@ -311,6 +317,7 @@ def save_plots():
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
 	ax.set_ylabel('Runtime of Algorithm 2 in seconds')
 	fig.savefig(dir + 'runtime_enumvstg_scatter.png')
+	plt.close(fig)
 
 
 if __name__ == '__main__':
