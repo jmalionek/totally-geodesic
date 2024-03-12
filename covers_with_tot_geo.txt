@@ -1,0 +1,15 @@
+cover_info_1_9_2_m004~irr
+cover_info_0_9_6_m003~irr
+cover_info_300_3_5_m412~irr
+cover_info_895_3_2_s594~irr
+cover_info_1262_3_1_s961~irr
+cover_info_1262_3_2_s961~irr
+cover_info_1262_3_3_s961~irr
+cover_info_1261_3_1_s960~irr
+cover_info_1261_3_2_s960~irr
+cover_info_1261_3_3_s960~irr
+cover_info_1256_3_1_s955~cyc
+cover_info_1257_3_3_s956~cyc
+cover_info_897_3_6_s596~cyc
+cover_info_897_3_7_s596~cyc
+cover_info_1258_3_1_s957~cyc
