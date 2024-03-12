@@ -216,23 +216,21 @@ def save_plots():
 	num_sfces = np.array(link_data['num_surfaces'] + cover_data['num_surfaces'])
 
 	# We exclude outliers where runtime was too large
-	good_times = (times < 5000)
-	times_enum = times_enum[good_times]
-	times_tg = times_tg[good_times]
-	times = times[good_times]
-	manifolds = manifolds[good_times]
+	eo_times = (times < 5000)
+	times_enum_eo = times_enum[eo_times]
+	times_eo = times[eo_times]
 
-	print('average runtime: ', np.average(times))
+	print('average runtime: ', np.average(times_eo))
 
 	fig, ax = plt.subplots()
-	ax.hist(times_enum, bins=30, edgecolor='black')
+	ax.hist(times_enum_eo, bins=30, edgecolor='black')
 	ax.set_xlabel('Runtime of enumerating surfaces in seconds')
 	fig.savefig(dir + 'runtime_enum_histogram.png')
 	plt.close(fig)
 
 	# When considering runtimes of Algorithm2 we exclude any manifolds where there were no surfaces
 	# (i.e. manifolds where runtime for Algorithm2 is 0)
-	good_times = (num_sfces > 0)
+	good_times = (times < 5000) & (num_sfces > 0)
 	times_enum = times_enum[good_times]
 	times_tg = times_tg[good_times]
 	times = times[good_times]
