@@ -325,7 +325,8 @@ def save_plots():
 
 
 def data_to_csv():
-	df = pd.DataFrame()
+	df = pd.DataFrame(columns=['manifold', 'manifold_name', 'runtime_vertex_surfaces', 'runtime_enumerate_surfaces', 'runtime_tot_geo',
+							   'vertex_surfaces_vec', 'all_surfaces_vec', 'tot_geo', 'potential_tot_geo'])
 	# link exteriors
 	for file in os.listdir('/data/keeling/a/chaeryn2/results_links_names_fixed/'):
 		with open('/data/keeling/a/chaeryn2/results_links_names_fixed/'+file, 'rb') as f:
