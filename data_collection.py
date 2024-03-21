@@ -346,7 +346,7 @@ def data_to_csv():
 						  'all_surfaces_vec': [d['all_surfaces']],
 						  'tot_geo': [d['tot_geo']],
 						  'potential_tot_geo': [None]}
-			row = pd.DataFrame(d)
+			row = pd.DataFrame(d_reformat)
 			df = pd.concat([df, row], ignore_index=True)
 
 	# covers
