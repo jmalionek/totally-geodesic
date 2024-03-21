@@ -17,6 +17,7 @@ import normal_surfaces
 import pickle
 import numpy as np
 import shutil
+import pandas as pd
 
 
 def get_all_results(location, filename_word = None, get_manifolds = False):
@@ -308,6 +309,11 @@ def save_plots():
 	print('Average of enumeration runtime ratios', np.average(times_enum/times))
 	print('Average of algorithm2 runtime ratios', np.average(times_tg/times))
 
+	# Printed information
+	# average runtime: 1483.3675443394623
+	# Average of enumeration runtime ratios: 0.8684011944220157
+	# Average of algorithm2 runtime ratios: 0.13159880557798412
+
 	fig, ax = plt.subplots()
 	indices = np.random.choice(np.arange(len(times_tg)), size=5000)
 	ax.scatter(times_enum[indices], times_tg[indices], s=5, alpha=.2)
@@ -318,6 +324,40 @@ def save_plots():
 	plt.close(fig)
 
 
+def data_to_csv():
+	df = pd.DataFrame()
+	# link exteriors
+	for file in os.listdir('/data/keeling/a/chaeryn2/results_links_names_fixed/'):
+		with open(file, 'rb') as f:
+			d = pickle.load(f)
+		if 'manifold_name' in d.keys():
+			row = pd.DataFrame(d)
+			df = pd.concat([df, row], ignore_index=True)
+		else:
+			M_name = file.split('_')[-1]
+			d_reformat = {'manifold': d['manifold'],
+						  'manifold_name': M_name,
+						  'runtime_vertex_surfaces': d['runtime_vertex_surfaces'],
+						  'runtime_enumerate_surfaces': d['runtime_enumerating_surfaces_from_vertex_surfaces'],
+						  'runtime_tot_geo': d['runtime_gp'],
+						  'vertex_surfaces_vec': [],
+						  'all_surfaces_vec': d['all_surfaces'],
+						  'tot_geo': d['tot_geo'],
+						  'potential_tot_geo': []}
+			row = pd.DataFrame(d)
+			df = pd.concat([df, row], ignore_index=True)
+
+	# covers
+	for file in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
+		if 'cover' in file:
+			with open(file, 'rb') as f:
+				d = pickle.load(f)
+			row = pd.DataFrame(d)
+			df = pd.concat([df, row], ignore_index=True)
+
+	df.to_csv('all_data.csv', sep=';')
+
+
 if __name__ == '__main__':
-	save_plots()
+	data_to_csv()
 	# downloading files from keeling: scp chaeryn2@keeling.earth.illinois.edu:/path_to_file /path_to_file_on_your_laptop
