@@ -332,19 +332,20 @@ def data_to_csv():
 		with open('/data/keeling/a/chaeryn2/results_links_names_fixed/'+file, 'rb') as f:
 			d = pickle.load(f)
 		if 'manifold_name' in d.keys():
-			row = pd.DataFrame(d)
+			d_reformat = {key:[item] for key, item in d.items()}
+			row = pd.DataFrame(d_reformat)
 			df = pd.concat([df, row], ignore_index=True)
 		else:
 			M_name = file.split('_')[-1]
-			d_reformat = {'manifold': d['manifold'],
-						  'manifold_name': M_name,
-						  'runtime_vertex_surfaces': d['runtime_vertex_surfaces'],
-						  'runtime_enumerate_surfaces': d['runtime_enumerating_surfaces_from_vertex_surfaces'],
-						  'runtime_tot_geo': d['runtime_gp'],
-						  'vertex_surfaces_vec': [],
-						  'all_surfaces_vec': d['all_surfaces'],
-						  'tot_geo': d['tot_geo'],
-						  'potential_tot_geo': []}
+			d_reformat = {'manifold': [d['manifold']],
+						  'manifold_name': [M_name],
+						  'runtime_vertex_surfaces': [d['runtime_vertex_surfaces']],
+						  'runtime_enumerate_surfaces': [d['runtime_enumerating_surfaces_from_vertex_surfaces']],
+						  'runtime_tot_geo': [d['runtime_gp']],
+						  'vertex_surfaces_vec': [None],
+						  'all_surfaces_vec': [d['all_surfaces']],
+						  'tot_geo': [d['tot_geo']],
+						  'potential_tot_geo': [None]}
 			row = pd.DataFrame(d)
 			df = pd.concat([df, row], ignore_index=True)
 
@@ -353,7 +354,8 @@ def data_to_csv():
 		if 'cover' in file:
 			with open('/data/keeling/a/chaeryn2/computation_outputs/'+file, 'rb') as f:
 				d = pickle.load(f)
-			row = pd.DataFrame(d)
+			d_reformat = {key: [item] for key, item in d.items()}
+			row = pd.DataFrame(d_reformat)
 			df = pd.concat([df, row], ignore_index=True)
 
 	df.to_csv('all_data.csv', sep=';')
