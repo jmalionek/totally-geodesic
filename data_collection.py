@@ -328,7 +328,7 @@ def data_to_csv():
 	df = pd.DataFrame()
 	# link exteriors
 	for file in os.listdir('/data/keeling/a/chaeryn2/results_links_names_fixed/'):
-		with open(file, 'rb') as f:
+		with open('/data/keeling/a/chaeryn2/results_links_names_fixed/'+file, 'rb') as f:
 			d = pickle.load(f)
 		if 'manifold_name' in d.keys():
 			row = pd.DataFrame(d)
@@ -350,7 +350,7 @@ def data_to_csv():
 	# covers
 	for file in os.listdir('/data/keeling/a/chaeryn2/computation_outputs/'):
 		if 'cover' in file:
-			with open(file, 'rb') as f:
+			with open('/data/keeling/a/chaeryn2/computation_outputs/'+file, 'rb') as f:
 				d = pickle.load(f)
 			row = pd.DataFrame(d)
 			df = pd.concat([df, row], ignore_index=True)
