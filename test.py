@@ -1,8 +1,8 @@
 import doctest
 import normal_surfaces
-# also import whatever new file we make for the keeling functions we will put into a new file
+import detect_tot_geo
 
-modules = [normal_surfaces]
+modules = [normal_surfaces, detect_tot_geo]
 
 def print_results(module, results):
     print(module.__name__ + ':')

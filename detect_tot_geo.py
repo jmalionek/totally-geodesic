@@ -9,6 +9,7 @@ from itertools import combinations
 from nscomplex_tg import regina_util, surfaces, enumerate_surfaces
 from sage.all import block_matrix, matrix, vector, CC, FreeGroup
 
+
 def obviously_compressible(surface):
     """
     Given a Regina NormalSurface object determines whether the surface has an obvious compressing disc.
@@ -16,24 +17,45 @@ def obviously_compressible(surface):
     S = surfaces.NormalSurface(surface, 0)
     return S.has_obvious_compression()
 
+
 def detect_totally_geodesic(manifold, filename=None):
     """
     Given a Snappy Manifold object, finds all totally geodesic surfaces and possibly totally geodesic surfaces (surfaces
-    that reach Algorithm2 step g) then pickles relevant information.
-    The name for the resulting pickle file can be given with the filename argument; by default the file will be saved as
-    "info_(name of manifold provided by Snappy)".
+    that reach Algorithm2 step g) then returns relevant information as a dictionary.
+    If a filename is given a pickle file containing the result is saved.
+    Note that this function may take an immense amount of time depending on the size of the manifold given: for small
+    manifolds (e.g. manifolds containing fewer than 10 tetrahedra) will only take a few minutes whereas for large manifolds
+    may take up to several days.
+
+    The cyclic 3-fold cover of the manifold 's957'
+    >>> M = snappy.Manifold('svvLvLzAPQQQQhkkjimokpqrpoqnrpqraawwrrrwaaahrhwhhhh_BbBa')
+
+    Detect totally geodesic surfaces in M and check its results
+    >>> result = detect_totally_geodesic(M)
+    >>> len(result['tot_geo'])
+    3
+    >>> len(result['potential_tot_geo'])
+    3
+
+    A totally geodesic surface in M and its properties, S.surface retrieves the regina NormalSurface object
+    >>> S = vec_to_NormalSurface(result['tot_geo'][0], M)
+    >>> S.surface.eulerChar()
+    -2
+    >>> S.surface.isOrientable()
+    False
     """
     M = manifold
     if 'degenerate' in M.solution_type():
         return
 
-    euler_bd = -math.floor(M.volume()/ (4 * 0.29156 * math.pi))
+    euler_bd = -math.floor(M.volume() / (4 * 0.29156 * math.pi))
 
     # use vertex surfaces to enumerate surfaces
 
     tik_total = time.perf_counter()
 
-    vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M), regina.NS_QUAD_CLOSED)  # algHints=regina.NS_VERTEX_DD not needed
+    vertex_surfaces = regina.NormalSurfaces(regina.Triangulation3(M),
+                                            regina.NS_QUAD_CLOSED)  # algHints=regina.NS_VERTEX_DD not needed
     vertex_surfaces_ess = [S for S in vertex_surfaces if not obviously_compressible(S)]
     vertex_surfaces_vec = [nscomplex_tg.regina_util.extract_vector(S) for S in vertex_surfaces]
 
@@ -61,7 +83,7 @@ def detect_totally_geodesic(manifold, filename=None):
 
     tot_geo_surfaces = []
     potential_tot_geo_surfaces = []  # these are surfaces that are orientable and whose traces are all real,
-                                     # need to apply steps g, h of Algorithm 2 using nscomplex to check for totally geodesic
+    # need to apply steps g, h of Algorithm 2 using nscomplex to check for totally geodesic
 
     for surface in incomp_our_surfaces:
         orientable = surface.surface.isOrientable()
@@ -85,17 +107,31 @@ def detect_totally_geodesic(manifold, filename=None):
               'tot_geo': tot_geo_surfaces,
               'potential_tot_geo': potential_tot_geo_surfaces}
 
-    if filename == None:
-        filename = f'info_{M.name()}'
+    if filename:
+        with open(filename, 'wb') as file:
+            pickle.dump(result, file)
 
-    with open(filename, 'wb') as file:
-        pickle.dump(result, file)
+    return result
 
 
 def is_Fuchsian(M, surface):
     """
     Determines whether the given normal_surfaces.NormalSurface object in the given Snappy manifold is Fuchsian.
     If the given surface is non-orientable, this checks whether its double is Fuchsian.
+
+    The cyclic 3-fold cover of the manifold 's957' and a totally geodesic inside
+    >>> M = snappy.Manifold('svvLvLzAPQQQQhkkjimokpqrpoqnrpqraawwrrrwaaahrhwhhhh_BbBa')
+    >>> result = detect_totally_geodesic(M)
+    >>> S = vec_to_NormalSurface(result['tot_geo'][0], M)
+
+    Checks if this surface is Fuchsian
+    >>> is_Fuchsian(M, S)
+    True
+
+    A non-example: some surface in the exterior of the knot '8_20' (a.k.a. the oysterman's stopper)
+    >>> S = vec_to_NormalSurface([0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1], snappy.Manifold('8_20'))
+    >>> is_Fuchsian(snappy.Manifold('8_20'), S)
+    False
     """
     G = M.fundamental_group(simplify_presentation=False)
     orientable = surface.surface.isOrientable()
