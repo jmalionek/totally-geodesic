@@ -71,6 +71,8 @@ For some entries, the vertex_surfaces_vec column may end up being empty because 
 
 An example of how to open our file (after uncompressing):
 
+::
+
    >>> import pandas as pd
    >>> df = pd.read_csv('all_data.csv', delimiter = ';')
    >>> df.loc[5]
